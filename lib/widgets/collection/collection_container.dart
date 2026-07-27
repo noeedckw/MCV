@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 import '../../providers/collection_provider.dart';
 import '../../storage/vinyl_entry.dart';
+import '../../providers/nav_bar_visibility_provider.dart';
 import 'collection_empty_state.dart';
 import 'collection_grid.dart';
 import 'collection_search_and_sort_row.dart';
@@ -35,6 +36,14 @@ class _CollectionContainerState extends State<CollectionContainer> {
   // Extra breathing room between the bottom of the header and the first
   // row of covers, so the grid doesn't start flush against it.
   static const double _headerGap = 12;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchFocusNode.addListener(() {
+      context.read<NavBarVisibilityProvider>().setHidden(_searchFocusNode.hasFocus);
+    });
+  }
 
   @override
   void dispose() {

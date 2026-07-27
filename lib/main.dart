@@ -6,6 +6,7 @@ import 'storage/storage_factory.dart';
 import 'providers/collection_provider.dart';
 import 'providers/explorer_provider.dart';
 import 'providers/connectivity_provider.dart';
+import 'providers/nav_bar_visibility_provider.dart';
 import 'screens/main_navigation_screen.dart';
 import 'package:flutter/services.dart';
 
@@ -46,6 +47,7 @@ class MyApp extends StatelessWidget {
         ),
 
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
+        ChangeNotifierProvider(create: (_) => NavBarVisibilityProvider()),
       ],
       child: MaterialApp(
         title: 'MCV',

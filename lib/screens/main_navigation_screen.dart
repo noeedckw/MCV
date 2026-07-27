@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'explorer_screen.dart';
 import 'collection_screen.dart';
 import '../providers/explorer_provider.dart';
+import '../providers/nav_bar_visibility_provider.dart';
 import '../widgets/pill_nav_bar.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -23,7 +24,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // Same flag ExplorerScreen watches to hide its search bar — kept in
     // sync so the navbar and search bar hide/show together around the
     // album detail modal.
-    final hideForModal = context.watch<ExplorerProvider>().isDetailModalOpen;
+    final hideForModal = context.watch<ExplorerProvider>().isDetailModalOpen ||
+      context.watch<NavBarVisibilityProvider>().hidden;
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(0, 201, 98, 98),

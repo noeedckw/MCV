@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/explorer_provider.dart';
+import '../providers/nav_bar_visibility_provider.dart';
 import '../widgets/explorer/explorer_results_container.dart';
 import '../widgets/explorer/explorer_search_bar.dart';
 import '../widgets/explorer/genre_accent.dart';
@@ -31,6 +32,9 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
     _scrollController.addListener(() {
       _scrollOffset.value = _scrollController.offset.clamp(0, 200);
     });
+    _focusNode.addListener(() {
+    context.read<NavBarVisibilityProvider>().setHidden(_focusNode.hasFocus);
+  });
   }
 
   // Ne déclenche plus aucun appel réseau : sert uniquement de point
