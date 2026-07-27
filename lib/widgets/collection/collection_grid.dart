@@ -36,7 +36,10 @@ class _CollectionGridState extends State<CollectionGrid> {
 
   void _onScaleUpdate(ScaleUpdateDetails details) {
     final delta = ((details.scale - 1) * 3).round();
-    final target = (_baseCrossAxisCount - delta).clamp(_minColumns, _maxColumns);
+    final target = (_baseCrossAxisCount - delta).clamp(
+      _minColumns,
+      _maxColumns,
+    );
     if (target != _crossAxisCount) {
       setState(() => _crossAxisCount = target);
     }
@@ -57,43 +60,66 @@ class _CollectionGridState extends State<CollectionGrid> {
     final isLarge = maxWidth > 600;
     final scale = _scaleFor(columns, isLarge);
 
-    final (title, sub, meta, year, spH, spV, hPad, textH, pad, maxGrid) = switch (columns) {
+    final (
+      title,
+      sub,
+      meta,
+      year,
+      spH,
+      spV,
+      hPad,
+      textH,
+      pad,
+      maxGrid,
+    ) = switch (columns) {
       1 => (
-          22.0, 16.0, 14.0,
-          16.0,
-          40.0, 40.0,
-          40.0,
-          150.0,
-          const EdgeInsets.fromLTRB(16, 14, 16, 14),
-          700.0,
-        ),
+        22.0,
+        16.0,
+        14.0,
+        16.0,
+        40.0,
+        40.0,
+        40.0,
+        150.0,
+        const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        700.0,
+      ),
       2 => (
-          16.5, 15.5, 14.5,
-          14.0,
-          12.0, 14.0,
-          36.0,
-          74.0,
-          const EdgeInsets.fromLTRB(10, 10, 10, 8),
-          null,
-        ),
+        16.5,
+        15.5,
+        14.5,
+        14.0,
+        12.0,
+        14.0,
+        36.0,
+        74.0,
+        const EdgeInsets.fromLTRB(10, 10, 10, 8),
+        null,
+      ),
       3 => (
-          13.0, 11.0, 10.0,
-          10.0,
-          8.0, 12.0,
-          34.0,
-          56.0,
-          const EdgeInsets.fromLTRB(8, 6, 8, 4),
-          null,
-        ),
+        13.0,
+        11.0,
+        10.0,
+        10.0,
+        8.0,
+        12.0,
+        34.0,
+        56.0,
+        const EdgeInsets.fromLTRB(8, 6, 8, 4),
+        null,
+      ),
       _ => (
-          12.0, 0.0, 0.0,
-          0.0,
-          6.0, 10.0,
-          28.0,
-          0.0,
-          const EdgeInsets.fromLTRB(3, 1, 3, 4),
-          null,
-        ),
+        12.0,
+        0.0,
+        0.0,
+        0.0,
+        6.0,
+        10.0,
+        28.0,
+        0.0,
+        const EdgeInsets.fromLTRB(3, 1, 3, 4),
+        null,
+      ),
     };
 
     return GridFormatStyle(
@@ -163,7 +189,9 @@ class _CollectionGridState extends State<CollectionGrid> {
             child: style.maxGridWidth != null
                 ? Center(
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: style.maxGridWidth!),
+                      constraints: BoxConstraints(
+                        maxWidth: style.maxGridWidth!,
+                      ),
                       child: grid,
                     ),
                   )

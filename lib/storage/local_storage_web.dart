@@ -33,8 +33,9 @@ class LocalStorageServiceImpl implements LocalStorageService {
         if (db.objectStoreNames!.contains(_legacyWantlistStore)) {
           final legacyStore = txn.objectStore(_legacyWantlistStore);
           final unifiedStore = txn.objectStore(_store);
-          await for (final cursor
-              in legacyStore.openCursor(autoAdvance: true)) {
+          await for (final cursor in legacyStore.openCursor(
+            autoAdvance: true,
+          )) {
             final value = Map<String, dynamic>.from(cursor.value as Map);
             value['isWantlist'] = true;
             value.putIfAbsent('condition', () => null);
@@ -58,29 +59,29 @@ class LocalStorageServiceImpl implements LocalStorageService {
   // your SDK, use whatever accessor you already use elsewhere for it.
 
   VinylEntry _fromMap(Map value) => VinylEntry(
-      id: value['id'] as int?,
-      discogsId: value['discogsId'] as int?,
-      artist: value['artist'] as String,
-      title: value['title'] as String,
-      year: value['year'] as int?,
-      label: value['label'] as String?,
-      format: value['format'] as String?,
-      condition: value['condition'] as String?,
-      coverBytes: value['coverBase64'] != null
-          ? base64Decode(value['coverBase64'] as String)
-          : null,
-      dateAdded: DateTime.parse(value['dateAdded'] as String),
-      isWantlist: value['isWantlist'] as bool? ?? false,
-      releaseId: value['releaseId'] as int?,
-      releaseCountry: value['releaseCountry'] as String?,
-      releaseDate: value['releaseDate'] as String?,
-      genres: (value['genres'] as List?)?.cast<String>(),
-      styles: (value['styles'] as List?)?.cast<String>(),
-      tracklist: (value['tracklist'] as List?)
-          ?.map((e) => TrackInfo.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList(),
-      notes: value['notes'] as String?,
-    );
+    id: value['id'] as int?,
+    discogsId: value['discogsId'] as int?,
+    artist: value['artist'] as String,
+    title: value['title'] as String,
+    year: value['year'] as int?,
+    label: value['label'] as String?,
+    format: value['format'] as String?,
+    condition: value['condition'] as String?,
+    coverBytes: value['coverBase64'] != null
+        ? base64Decode(value['coverBase64'] as String)
+        : null,
+    dateAdded: DateTime.parse(value['dateAdded'] as String),
+    isWantlist: value['isWantlist'] as bool? ?? false,
+    releaseId: value['releaseId'] as int?,
+    releaseCountry: value['releaseCountry'] as String?,
+    releaseDate: value['releaseDate'] as String?,
+    genres: (value['genres'] as List?)?.cast<String>(),
+    styles: (value['styles'] as List?)?.cast<String>(),
+    tracklist: (value['tracklist'] as List?)
+        ?.map((e) => TrackInfo.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
+    notes: value['notes'] as String?,
+  );
 
   Future<void> _insert(
     VinylEntry vinyl,
@@ -97,8 +98,9 @@ class LocalStorageServiceImpl implements LocalStorageService {
       'label': vinyl.label,
       'format': vinyl.format,
       'condition': vinyl.condition,
-      'coverBase64':
-          coverImageBytes != null ? base64Encode(coverImageBytes) : null,
+      'coverBase64': coverImageBytes != null
+          ? base64Encode(coverImageBytes)
+          : null,
       'dateAdded': vinyl.dateAdded.toIso8601String(),
       'isWantlist': isWantlist,
       'releaseId': vinyl.releaseId,
@@ -135,8 +137,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
       _insert(vinyl, false, coverImageBytes);
 
   @override
-  Future<void> insertWantlist(VinylEntry vinyl,
-          {Uint8List? coverImageBytes}) =>
+  Future<void> insertWantlist(VinylEntry vinyl, {Uint8List? coverImageBytes}) =>
       _insert(vinyl, true, coverImageBytes);
 
   @override
@@ -145,7 +146,11 @@ class LocalStorageServiceImpl implements LocalStorageService {
     await txn.objectStore(_store).delete(id);
   }
 
-  Future<void> _deleteByDiscogsId(int discogsId, bool isWantlist, {int? releaseId}) async {
+  Future<void> _deleteByDiscogsId(
+    int discogsId,
+    bool isWantlist, {
+    int? releaseId,
+  }) async {
     final txn = _db.transaction(_store, 'readwrite');
     final store = txn.objectStore(_store);
     await for (final cursor in store.openCursor(autoAdvance: false)) {
@@ -168,7 +173,11 @@ class LocalStorageServiceImpl implements LocalStorageService {
   Future<void> removeWantlistByDiscogsId(int discogsId, {int? releaseId}) =>
       _deleteByDiscogsId(discogsId, true, releaseId: releaseId);
 
-  Future<bool> _existsByDiscogsId(int discogsId, bool isWantlist, {int? releaseId}) async {
+  Future<bool> _existsByDiscogsId(
+    int discogsId,
+    bool isWantlist, {
+    int? releaseId,
+  }) async {
     final all = await _getAll(isWantlist: isWantlist);
     return all.any((v) => v.discogsId == discogsId && v.releaseId == releaseId);
   }
@@ -181,7 +190,11 @@ class LocalStorageServiceImpl implements LocalStorageService {
   Future<bool> wantlistExistsByDiscogsId(int discogsId, {int? releaseId}) =>
       _existsByDiscogsId(discogsId, true, releaseId: releaseId);
 
-  Future<void> _setWantlist(int discogsId, bool isWantlist, {int? releaseId}) async {
+  Future<void> _setWantlist(
+    int discogsId,
+    bool isWantlist, {
+    int? releaseId,
+  }) async {
     final txn = _db.transaction(_store, 'readwrite');
     final store = txn.objectStore(_store);
     await for (final cursor in store.openCursor(autoAdvance: false)) {

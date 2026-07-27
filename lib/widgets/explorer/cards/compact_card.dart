@@ -47,11 +47,13 @@ class CompactCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(_coverInset, _coverInset, _coverInset, 0),
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: cover,
+                padding: const EdgeInsets.fromLTRB(
+                  _coverInset,
+                  _coverInset,
+                  _coverInset,
+                  0,
                 ),
+                child: AspectRatio(aspectRatio: 1, child: cover),
               ),
               SizedBox(
                 height: style.textContainerHeight,

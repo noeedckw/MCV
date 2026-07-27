@@ -38,7 +38,10 @@ class CollectionSearchAndSortRow extends StatelessWidget {
                       child: TextField(
                         focusNode: focusNode,
                         onChanged: provider.setSearchQuery,
-                        style: const TextStyle(color: Colors.white, fontSize: 13.5),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13.5,
+                        ),
                         decoration: InputDecoration(
                           isCollapsed: true,
                           border: InputBorder.none,

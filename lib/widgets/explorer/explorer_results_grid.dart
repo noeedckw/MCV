@@ -9,8 +9,8 @@ class GridFormatStyle {
   final double spacingV; // espace vertical entre cartes (mainAxisSpacing)
   final double titleFontSize;
   final double subtitleFontSize;
-  final double metaFontSize;   // tags: genre / country / label
-  final double yearFontSize;   // année, séparée du reste
+  final double metaFontSize; // tags: genre / country / label
+  final double yearFontSize; // année, séparée du reste
   final EdgeInsets textPadding;
   final double horizontalPadding;
   final double? maxGridWidth;
@@ -54,8 +54,9 @@ class _ExplorerResultsGridState extends State<ExplorerResultsGrid> {
   int _baseCrossAxisCount = 2;
   int _currentPage = 0;
 
-  int get _pageCount =>
-      widget.results.isEmpty ? 1 : (widget.results.length / _itemsPerPage).ceil();
+  int get _pageCount => widget.results.isEmpty
+      ? 1
+      : (widget.results.length / _itemsPerPage).ceil();
 
   List<dynamic> get _currentPageItems {
     final start = _currentPage * _itemsPerPage;
@@ -82,7 +83,10 @@ class _ExplorerResultsGridState extends State<ExplorerResultsGrid> {
 
   void _onScaleUpdate(ScaleUpdateDetails details) {
     final delta = ((details.scale - 1) * 3).round();
-    final target = (_baseCrossAxisCount - delta).clamp(_minColumns, _maxColumns);
+    final target = (_baseCrossAxisCount - delta).clamp(
+      _minColumns,
+      _maxColumns,
+    );
     if (target != _crossAxisCount) {
       setState(() => _crossAxisCount = target);
     }
@@ -107,43 +111,60 @@ class _ExplorerResultsGridState extends State<ExplorerResultsGrid> {
     final scale = _scaleFor(columns, isLarge);
 
     // Valeurs de base par colonne, à scale = 1.0
-    final (title, sub, meta, year, spH, spV, hPad, textH, pad, maxGrid) = switch (columns) {
+    final (
+      title,
+      sub,
+      meta,
+      year,
+      spH,
+      spV,
+      hPad,
+      textH,
+      pad,
+      maxGrid,
+    ) = switch (columns) {
       1 => (
-          22.0, 16.0, 14.0, // title, subtitle, meta (tags)
-          16.0, // ← yearFontSize, séparée des tags pour le format 1
-          40.0, 40.0, // spacingH, spacingV
-          40.0, // horizontalPadding (bords de la grille)
-          150.0, // textContainerHeight
-          const EdgeInsets.fromLTRB(16, 14, 16, 14),
-          700.0, // maxGridWidth
-        ),
+        22.0, 16.0, 14.0, // title, subtitle, meta (tags)
+        16.0, // ← yearFontSize, séparée des tags pour le format 1
+        40.0, 40.0, // spacingH, spacingV
+        40.0, // horizontalPadding (bords de la grille)
+        150.0, // textContainerHeight
+        const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        700.0, // maxGridWidth
+      ),
       2 => (
-          16.5, 15.5, 14.5,
-          14.0, // yearFontSize = metaFontSize par défaut ici
-          12.0, 14.0,
-          36.0,
-          74.0,
-          const EdgeInsets.fromLTRB(10, 10, 10, 8),
-          null,
-        ),
+        16.5, 15.5, 14.5,
+        14.0, // yearFontSize = metaFontSize par défaut ici
+        12.0, 14.0,
+        36.0,
+        74.0,
+        const EdgeInsets.fromLTRB(10, 10, 10, 8),
+        null,
+      ),
       3 => (
-          13.0, 11.0, 10.0,
-          10.0,
-          8.0, 12.0,
-          34.0,
-          56.0,
-          const EdgeInsets.fromLTRB(8, 6, 8, 4),
-          null,
-        ),
+        13.0,
+        11.0,
+        10.0,
+        10.0,
+        8.0,
+        12.0,
+        34.0,
+        56.0,
+        const EdgeInsets.fromLTRB(8, 6, 8, 4),
+        null,
+      ),
       _ => (
-          12.0, 0.0, 0.0,
-          0.0,
-          6.0, 10.0,
-          28.0,
-          0.0,
-          const EdgeInsets.fromLTRB(3, 1, 3, 4),
-          null,
-        ),
+        12.0,
+        0.0,
+        0.0,
+        0.0,
+        6.0,
+        10.0,
+        28.0,
+        0.0,
+        const EdgeInsets.fromLTRB(3, 1, 3, 4),
+        null,
+      ),
     };
 
     return GridFormatStyle(
@@ -218,7 +239,9 @@ class _ExplorerResultsGridState extends State<ExplorerResultsGrid> {
                 child: style.maxGridWidth != null
                     ? Center(
                         child: ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: style.maxGridWidth!),
+                          constraints: BoxConstraints(
+                            maxWidth: style.maxGridWidth!,
+                          ),
                           child: grid,
                         ),
                       )
@@ -235,7 +258,9 @@ class _ExplorerResultsGridState extends State<ExplorerResultsGrid> {
               icon: Icons.chevron_left,
               iconFirst: true,
               label: '${_currentPage + 1}',
-              onTap: _currentPage > 0 ? () => _goToPage(_currentPage - 1) : null,
+              onTap: _currentPage > 0
+                  ? () => _goToPage(_currentPage - 1)
+                  : null,
             ),
           ),
           Positioned(
@@ -245,7 +270,9 @@ class _ExplorerResultsGridState extends State<ExplorerResultsGrid> {
               icon: Icons.chevron_right,
               iconFirst: false,
               label: '$_pageCount',
-              onTap: _currentPage < _pageCount - 1 ? () => _goToPage(_currentPage + 1) : null,
+              onTap: _currentPage < _pageCount - 1
+                  ? () => _goToPage(_currentPage + 1)
+                  : null,
             ),
           ),
         ],

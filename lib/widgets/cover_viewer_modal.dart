@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Full-screen cover viewer: pinch (two fingers) to zoom. Tap outside to close.
-Future<void> showCoverViewer(
-  BuildContext context, {
-  required Widget cover,
-}) {
+Future<void> showCoverViewer(BuildContext context, {required Widget cover}) {
   return showGeneralDialog(
     context: context,
     barrierDismissible: true,
@@ -13,7 +10,10 @@ Future<void> showCoverViewer(
     transitionDuration: const Duration(milliseconds: 200),
     pageBuilder: (context, anim1, anim2) => _CoverViewerModal(cover: cover),
     transitionBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+      );
       return FadeTransition(
         opacity: curved,
         child: ScaleTransition(
@@ -34,7 +34,8 @@ class _CoverViewerModal extends StatefulWidget {
 }
 
 class _CoverViewerModalState extends State<_CoverViewerModal> {
-  final TransformationController _transformController = TransformationController();
+  final TransformationController _transformController =
+      TransformationController();
 
   @override
   void dispose() {

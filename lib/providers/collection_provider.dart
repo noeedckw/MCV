@@ -3,6 +3,7 @@ import '../storage/local_storage_service.dart';
 import '../storage/vinyl_entry.dart';
 
 enum CollectionView { owned, wantlist }
+
 enum CollectionSort { dateAdded, artist, album, releaseDate }
 
 class CollectionProvider extends ChangeNotifier {
@@ -56,9 +57,11 @@ class CollectionProvider extends ChangeNotifier {
     if (searchQuery.isNotEmpty) {
       final q = searchQuery.toLowerCase();
       list = list
-          .where((v) =>
-              v.artist.toLowerCase().contains(q) ||
-              v.title.toLowerCase().contains(q))
+          .where(
+            (v) =>
+                v.artist.toLowerCase().contains(q) ||
+                v.title.toLowerCase().contains(q),
+          )
           .toList();
     }
 
@@ -117,7 +120,9 @@ class CollectionProvider extends ChangeNotifier {
       sortDescending = !sortDescending;
     } else {
       sort = newSort;
-      sortDescending = sort == CollectionSort.dateAdded || sort == CollectionSort.releaseDate;
+      sortDescending =
+          sort == CollectionSort.dateAdded ||
+          sort == CollectionSort.releaseDate;
     }
     notifyListeners();
   }
@@ -135,14 +140,20 @@ class CollectionProvider extends ChangeNotifier {
   Future<void> deleteVinyl(int id) async {
     await storage.deleteVinyl(id);
     await reload();
-  } 
+  }
 
   Future<void> removeEntry(VinylEntry entry) async {
     if (entry.discogsId != null) {
       if (entry.isWantlist) {
-        await storage.removeWantlistByDiscogsId(entry.discogsId!, releaseId: entry.releaseId);
+        await storage.removeWantlistByDiscogsId(
+          entry.discogsId!,
+          releaseId: entry.releaseId,
+        );
       } else {
-        await storage.deleteVinylByDiscogsId(entry.discogsId!, releaseId: entry.releaseId);
+        await storage.deleteVinylByDiscogsId(
+          entry.discogsId!,
+          releaseId: entry.releaseId,
+        );
       }
     } else if (entry.id != null) {
       await storage.deleteVinyl(entry.id!);
@@ -158,7 +169,10 @@ class CollectionProvider extends ChangeNotifier {
 
   Future<void> moveToCollection(VinylEntry entry) async {
     if (entry.discogsId == null) return;
-    await storage.moveToCollection(entry.discogsId!, releaseId: entry.releaseId);
+    await storage.moveToCollection(
+      entry.discogsId!,
+      releaseId: entry.releaseId,
+    );
     await reload();
   }
 }

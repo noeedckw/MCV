@@ -17,7 +17,10 @@ class CollectionScreen extends StatelessWidget {
     showCollectionAlbumDetail(
       context,
       entry: entry,
-      cover: CoverImage(localPath: entry.localCoverPath, bytes: entry.coverBytes),
+      cover: CoverImage(
+        localPath: entry.localCoverPath,
+        bytes: entry.coverBytes,
+      ),
       onRemove: () async {
         await provider.removeEntry(entry);
         if (context.mounted) Navigator.of(context).maybePop();

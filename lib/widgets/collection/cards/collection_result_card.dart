@@ -7,6 +7,7 @@ import '../../explorer/explorer_results_grid.dart';
 import '../../explorer/cards/compact_card.dart';
 import 'collection_large_card.dart';
 import '../../../utils/artist_name.dart';
+
 /// Routes to the right card for the active column count.
 ///
 /// Large (1 col) and Compact (3 col) get collection-specific cards —
@@ -31,7 +32,10 @@ class CollectionResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget cover = CoverImage(localPath: entry.localCoverPath, bytes: entry.coverBytes);
+    final Widget cover = CoverImage(
+      localPath: entry.localCoverPath,
+      bytes: entry.coverBytes,
+    );
 
     final year = entry.year?.toString();
     final hasYear = year != null && year.isNotEmpty && year != "0";
@@ -40,14 +44,19 @@ class CollectionResultCard extends StatelessWidget {
     final Widget content = switch (columns) {
       1 => CollectionLargeCard(entry: entry, cover: cover, style: style),
       2 => StandardCard(
-          cover: cover,
-          artist: artist,
-          album: entry.title,
-          year: year,
-          hasYear: hasYear,
-          style: style,
-        ),
-      3 => CompactCard(cover: cover, artist: artist, album: entry.title, style: style),
+        cover: cover,
+        artist: artist,
+        album: entry.title,
+        year: year,
+        hasYear: hasYear,
+        style: style,
+      ),
+      3 => CompactCard(
+        cover: cover,
+        artist: artist,
+        album: entry.title,
+        style: style,
+      ),
       _ => MosaicCard(cover: cover, album: entry.title, style: style),
     };
 

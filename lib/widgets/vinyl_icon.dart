@@ -2,11 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 class VinylIcon extends StatelessWidget {
-  const VinylIcon({
-    super.key,
-    this.size = 24,
-    this.color,
-  });
+  const VinylIcon({super.key, this.size = 24, this.color});
 
   final double size;
   final Color? color;
@@ -23,11 +19,7 @@ class VinylIcon extends StatelessWidget {
 }
 
 class SearchVinylIcon extends StatelessWidget {
-  const SearchVinylIcon({
-    super.key,
-    this.size = 24,
-    this.color,
-  });
+  const SearchVinylIcon({super.key, this.size = 24, this.color});
 
   final double size;
   final Color? color;
@@ -62,21 +54,14 @@ class _VinylPainter extends CustomPainter {
     // Cercle extérieur
     //------------------------------------------
 
-    canvas.drawCircle(
-      const Offset(12, 12),
-      10,
-      stroke,
-    );
+    canvas.drawCircle(const Offset(12, 12), 10, stroke);
 
     //------------------------------------------
     // Reflet
     //------------------------------------------
 
     canvas.drawArc(
-      Rect.fromCircle(
-        center: Offset(12, 12),
-        radius: 6.8,
-      ),
+      Rect.fromCircle(center: Offset(12, 12), radius: 6.8),
       math.pi * 1.12,
       math.pi * 0.28,
       false,
@@ -91,21 +76,14 @@ class _VinylPainter extends CustomPainter {
     // Petit point du reflet
     //------------------------------------------
 
-    canvas.drawCircle(
-      const Offset(13.0, 5.4),
-      0.60,
-      Paint()..color = color,
-    );
+    canvas.drawCircle(const Offset(13.0, 5.4), 0.60, Paint()..color = color);
 
     //------------------------------------------
     // Arc inférieur
     //------------------------------------------
 
     canvas.drawArc(
-      Rect.fromCircle(
-        center: Offset(12, 12),
-        radius: 6.8,
-      ),
+      Rect.fromCircle(center: Offset(12, 12), radius: 6.8),
       math.pi * 0.05,
       math.pi * 0.41,
       false,
@@ -120,11 +98,7 @@ class _VinylPainter extends CustomPainter {
     // Label central
     //------------------------------------------
 
-    canvas.drawCircle(
-      const Offset(12, 12),
-      2.55,
-      Paint()..color = color,
-    );
+    canvas.drawCircle(const Offset(12, 12), 2.55, Paint()..color = color);
 
     //------------------------------------------
     // Trou du disque
@@ -160,10 +134,7 @@ class _SearchPainter extends CustomPainter {
 
     // Cercle
     path.addArc(
-      Rect.fromCircle(
-        center: const Offset(10.2, 10.2),
-        radius: 7.3,
-      ),
+      Rect.fromCircle(center: const Offset(10.2, 10.2), radius: 7.3),
       math.pi * 0.45,
       math.pi * 1.80,
     );
@@ -180,10 +151,7 @@ class _SearchPainter extends CustomPainter {
     //------------------------------------------
 
     canvas.drawArc(
-      Rect.fromCircle(
-        center: Offset(10.2, 10.2),
-        radius: 4.2,
-      ),
+      Rect.fromCircle(center: Offset(10.2, 10.2), radius: 4.2),
       math.pi * 1.30,
       math.pi * 0.35,
       false,
@@ -198,13 +166,7 @@ class _SearchPainter extends CustomPainter {
     // Petit point
     //------------------------------------------
 
-    canvas.drawCircle(
-      const Offset(13.95, 8.25),
-      0.60,
-      Paint()..color = color,
-    );
-
-
+    canvas.drawCircle(const Offset(13.95, 8.25), 0.60, Paint()..color = color);
   }
 
   @override

@@ -8,7 +8,7 @@ class DiscogsApi {
   final DiscogsCache _cache;
 
   DiscogsApi(this.token, {DiscogsCache? cache})
-      : _cache = cache ?? DiscogsCache();
+    : _cache = cache ?? DiscogsCache();
 
   static const _baseUrl = 'https://api.discogs.com';
   static const _userAgent = 'VinylCollectionApp/1.0';

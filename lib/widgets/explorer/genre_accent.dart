@@ -25,6 +25,5 @@ class GenreAccent {
     GenreAccent('Rap', Color(0xFFFF6B5B)),
   ];
 
-  static GenreAccent random() =>
-      palette[Random().nextInt(palette.length)];
+  static GenreAccent random() => palette[Random().nextInt(palette.length)];
 }

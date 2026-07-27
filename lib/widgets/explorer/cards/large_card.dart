@@ -110,10 +110,7 @@ class LargeCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: AspectRatio(
-                        aspectRatio: 1,
-                        child: cover,
-                      ),
+                      child: AspectRatio(aspectRatio: 1, child: cover),
                     ),
                   ),
 

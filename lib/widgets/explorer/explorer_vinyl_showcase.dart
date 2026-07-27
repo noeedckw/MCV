@@ -127,11 +127,9 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
 
       final covers = <String>{
         for (final r in results)
-          if (r is Map &&
-              (r['cover_image'] as String?)?.isNotEmpty == true)
+          if (r is Map && (r['cover_image'] as String?)?.isNotEmpty == true)
             r['cover_image'] as String,
-      }.toList()
-        ..shuffle(Random());
+      }.toList()..shuffle(Random());
 
       if (covers.isEmpty) {
         if (!mounted || loadId != _loadId) return;
@@ -202,9 +200,7 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
 
     if (_isLoading) {
       return Center(
-        child: CircularProgressIndicator(
-          color: widget.genreAccent.color,
-        ),
+        child: CircularProgressIndicator(color: widget.genreAccent.color),
       );
     }
 
@@ -212,9 +208,7 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
       return Center(
         child: Text(
           "Impossible de charger les vinyles",
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: .6),
-          ),
+          style: TextStyle(color: Colors.white.withValues(alpha: .6)),
         ),
       );
     }
@@ -222,12 +216,7 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
     final accent = widget.genreAccent.color;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        0,
-        topPadding,
-        0,
-        bottomPadding,
-      ),
+      padding: EdgeInsets.fromLTRB(0, topPadding, 0, bottomPadding),
       child: SingleChildScrollView(
         physics: const ClampingScrollPhysics(),
         child: Column(
@@ -269,10 +258,7 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(24),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(
-                      sigmaX: 16,
-                      sigmaY: 16,
-                    ),
+                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(

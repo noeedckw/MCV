@@ -2,11 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-enum CollectionEmptyType {
-  emptyCollection,
-  emptyWantlist,
-  noSearchResults,
-}
+enum CollectionEmptyType { emptyCollection, emptyWantlist, noSearchResults }
 
 /// Shown when the current view (collection or wantlist) has no items yet,
 /// or when a search inside the current view returns nothing.
@@ -39,11 +35,7 @@ class CollectionEmptyState extends StatelessWidget {
             return AnimatedContainer(
               duration: const Duration(milliseconds: 500),
               curve: Curves.easeInOutCubic,
-              transform: Matrix4.translationValues(
-                0,
-                isFocused ? -40 : -20,
-                0,
-              ),
+              transform: Matrix4.translationValues(0, isFocused ? -40 : -20, 0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -52,10 +44,7 @@ class CollectionEmptyState extends StatelessWidget {
                     curve: Curves.easeInOutCubic,
                     width: isFocused ? 450 : 650,
                     height: isFocused ? 180 : 300,
-                    child: Image.asset(
-                      image,
-                      fit: BoxFit.contain,
-                    ),
+                    child: Image.asset(image, fit: BoxFit.contain),
                   ),
                   const SizedBox(height: 20),
                   Text(
@@ -95,18 +84,14 @@ class CollectionEmptyState extends StatelessWidget {
         return const _CollectionEmptyData(
           title: "No Records Yet",
           subtitle: "Start collecting by adding your first vinyl.",
-          images: [
-            "assets/images/empty_collection_vinyl.png",
-          ],
+          images: ["assets/images/empty_collection_vinyl.png"],
         );
 
       case CollectionEmptyType.emptyWantlist:
         return const _CollectionEmptyData(
           title: "Your Wantlist Is Empty",
           subtitle: "Save albums you'd like to own to see them here.",
-          images: [
-            "assets/images/empty_wantlist_vinyl.png",
-          ],
+          images: ["assets/images/empty_wantlist_vinyl.png"],
         );
 
       case CollectionEmptyType.noSearchResults:

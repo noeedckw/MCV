@@ -90,13 +90,15 @@ class _ExplorerSearchBarState extends State<ExplorerSearchBar> {
 
         final borderAlphaTop = focused ? .4 : .2;
         final borderAlphaScrolled = focused ? .6 : .3;
-        final borderAlpha =
-            lerpDouble(borderAlphaTop, borderAlphaScrolled, scrollT)!;
+        final borderAlpha = lerpDouble(
+          borderAlphaTop,
+          borderAlphaScrolled,
+          scrollT,
+        )!;
 
         final haloAlphaTop = focused ? .22 : .18;
         final haloAlphaScrolled = focused ? .28 : .14;
-        final haloAlpha =
-            lerpDouble(haloAlphaTop, haloAlphaScrolled, scrollT)!;
+        final haloAlpha = lerpDouble(haloAlphaTop, haloAlphaScrolled, scrollT)!;
 
         final haloBlurTop = focused ? 12.0 : 8.0;
         final haloBlur = lerpDouble(haloBlurTop, 5.0, scrollT)!;
@@ -152,11 +154,7 @@ class _ExplorerSearchBarState extends State<ExplorerSearchBar> {
                         Icon(
                           Icons.search_rounded,
                           size: 21,
-                          color: Color.lerp(
-                            Colors.white,
-                            widget.accent,
-                            .35,
-                          )!
+                          color: Color.lerp(Colors.white, widget.accent, .35)!
                               .withValues(
                                 alpha: focused
                                     ? .95
@@ -200,7 +198,9 @@ class _ExplorerSearchBarState extends State<ExplorerSearchBar> {
                               height: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation(widget.accent),
+                                valueColor: AlwaysStoppedAnimation(
+                                  widget.accent,
+                                ),
                               ),
                             ),
                           )

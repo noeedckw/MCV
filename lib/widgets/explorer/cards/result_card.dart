@@ -48,40 +48,33 @@ class ResultCard extends StatelessWidget {
 
     final Widget content = switch (columns) {
       1 => LargeCard(
-          cover: coverWidget,
-          artist: artist,
-          album: album,
-          year: year,
-          hasYear: hasYear,
-          genre: genre,
-          country: country,
-          label: label,
-          style: style,
-        ),
+        cover: coverWidget,
+        artist: artist,
+        album: album,
+        year: year,
+        hasYear: hasYear,
+        genre: genre,
+        country: country,
+        label: label,
+        style: style,
+      ),
       2 => StandardCard(
-          cover: coverWidget,
-          artist: artist,
-          album: album,
-          year: year,
-          hasYear: hasYear,
-          style: style,
-        ),
+        cover: coverWidget,
+        artist: artist,
+        album: album,
+        year: year,
+        hasYear: hasYear,
+        style: style,
+      ),
       3 => CompactCard(
-          cover: coverWidget,
-          artist: artist,
-          album: album,
-          style: style,
-        ),
-      _ => MosaicCard(
-          cover: coverWidget,
-          album: album,
-          style: style,
-        ),
+        cover: coverWidget,
+        artist: artist,
+        album: album,
+        style: style,
+      ),
+      _ => MosaicCard(cover: coverWidget, album: album, style: style),
     };
 
-    return GestureDetector(
-      onTap: onTap,
-      child: content,
-    );
+    return GestureDetector(onTap: onTap, child: content);
   }
 }

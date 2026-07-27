@@ -2,17 +2,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-enum ExplorerErrorType {
-  noInternet,
-  noResults,
-}
+enum ExplorerErrorType { noInternet, noResults }
 
 class ExplorerErrorState extends StatelessWidget {
-  ExplorerErrorState({
-    super.key,
-    required this.type,
-    required this.focusNode,
-  });
+  ExplorerErrorState({super.key, required this.type, required this.focusNode});
 
   final ExplorerErrorType type;
   final FocusNode focusNode;
@@ -31,12 +24,7 @@ class ExplorerErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(
-              image,
-              width: 650,
-              height: 300,
-              fit: BoxFit.contain,
-            ),
+            Image.asset(image, width: 650, height: 300, fit: BoxFit.contain),
 
             AnimatedBuilder(
               animation: focusNode,

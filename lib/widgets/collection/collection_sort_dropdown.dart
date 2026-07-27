@@ -87,12 +87,21 @@ class _CollectionSortDropdownState extends State<CollectionSortDropdown>
             CompositedTransformFollower(
               link: _layerLink,
               showWhenUnlinked: false,
-              offset: Offset(buttonSize.width - panelWidth, buttonSize.height + 8),
+              offset: Offset(
+                buttonSize.width - panelWidth,
+                buttonSize.height + 8,
+              ),
               child: FadeTransition(
-                opacity: CurvedAnimation(parent: _animController, curve: Curves.easeOut),
+                opacity: CurvedAnimation(
+                  parent: _animController,
+                  curve: Curves.easeOut,
+                ),
                 child: ScaleTransition(
                   scale: Tween(begin: 0.94, end: 1.0).animate(
-                    CurvedAnimation(parent: _animController, curve: Curves.easeOut),
+                    CurvedAnimation(
+                      parent: _animController,
+                      curve: Curves.easeOut,
+                    ),
                   ),
                   alignment: Alignment.topRight,
                   child: Material(
@@ -103,8 +112,10 @@ class _CollectionSortDropdownState extends State<CollectionSortDropdown>
                           width: panelWidth,
                           selectedSort: _pendingSort,
                           descending: _pendingDescending,
-                          onSortChanged: (s) => setPanelState(() => _pendingSort = s),
-                          onDirectionChanged: (d) => setPanelState(() => _pendingDescending = d),
+                          onSortChanged: (s) =>
+                              setPanelState(() => _pendingSort = s),
+                          onDirectionChanged: (d) =>
+                              setPanelState(() => _pendingDescending = d),
                         );
                       },
                     ),
@@ -161,7 +172,9 @@ class _CollectionSortDropdownState extends State<CollectionSortDropdown>
                     height: 44,
                     width: 44,
                     child: Icon(
-                      provider.sortDescending ? Icons.south_rounded : Icons.north_rounded,
+                      provider.sortDescending
+                          ? Icons.south_rounded
+                          : Icons.north_rounded,
                       size: 18,
                       color: Colors.white.withValues(alpha: .75),
                     ),
@@ -192,18 +205,18 @@ class _SortDropdownPanel extends StatelessWidget {
   });
 
   String _label(CollectionSort s) => switch (s) {
-      CollectionSort.dateAdded => 'Date added',
-      CollectionSort.artist => 'Artist',
-      CollectionSort.album => 'Album',
-      CollectionSort.releaseDate => 'Release date',
-    };
+    CollectionSort.dateAdded => 'Date added',
+    CollectionSort.artist => 'Artist',
+    CollectionSort.album => 'Album',
+    CollectionSort.releaseDate => 'Release date',
+  };
 
   IconData _icon(CollectionSort s) => switch (s) {
-      CollectionSort.dateAdded => Icons.schedule_rounded,
-      CollectionSort.artist => Icons.person_rounded,
-      CollectionSort.album => Icons.album_outlined,
-      CollectionSort.releaseDate => Icons.calendar_today_rounded,
-    };
+    CollectionSort.dateAdded => Icons.schedule_rounded,
+    CollectionSort.artist => Icons.person_rounded,
+    CollectionSort.album => Icons.album_outlined,
+    CollectionSort.releaseDate => Icons.calendar_today_rounded,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -254,11 +267,16 @@ class _SortDropdownPanel extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                           onTap: () => onDirectionChanged(!descending),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 2,
+                            ),
                             child: Row(
                               children: [
                                 Icon(
-                                  descending ? Icons.south_rounded : Icons.north_rounded,
+                                  descending
+                                      ? Icons.south_rounded
+                                      : Icons.north_rounded,
                                   size: 14,
                                   color: Colors.white.withValues(alpha: .75),
                                 ),
@@ -323,7 +341,9 @@ class _SortOption extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: selected ? Colors.white : Colors.white.withValues(alpha: .5),
+                color: selected
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: .5),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -332,11 +352,18 @@ class _SortOption extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    color: selected ? Colors.white : Colors.white.withValues(alpha: .75),
+                    color: selected
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: .75),
                   ),
                 ),
               ),
-              if (selected) Icon(Icons.check_rounded, size: 16, color: Colors.white.withValues(alpha: .85)),
+              if (selected)
+                Icon(
+                  Icons.check_rounded,
+                  size: 16,
+                  color: Colors.white.withValues(alpha: .85),
+                ),
             ],
           ),
         ),

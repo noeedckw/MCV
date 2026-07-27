@@ -25,12 +25,18 @@ Future<void> showCollectionAlbumDetail(
       onToggleList: onToggleList,
     ),
     transitionBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+      );
       return AnimatedBuilder(
         animation: curved,
         child: child,
         builder: (context, child) => BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 20 * curved.value, sigmaY: 20 * curved.value),
+          filter: ui.ImageFilter.blur(
+            sigmaX: 20 * curved.value,
+            sigmaY: 20 * curved.value,
+          ),
           child: Container(
             color: Colors.black.withValues(alpha: .5 * curved.value),
             child: FadeTransition(
@@ -80,10 +86,13 @@ class _CollectionAlbumDetailModal extends StatelessWidget {
     // is available for the chosen pressing.
     final versionParts = <String>[
       if (entry.format != null && entry.format!.isNotEmpty) entry.format!,
-      if (entry.releaseCountry != null && entry.releaseCountry!.isNotEmpty) entry.releaseCountry!,
+      if (entry.releaseCountry != null && entry.releaseCountry!.isNotEmpty)
+        entry.releaseCountry!,
     ];
     final versionLabel = entry.isSpecificEdition
-        ? (versionParts.isNotEmpty ? versionParts.join(' · ') : 'Specific Edition')
+        ? (versionParts.isNotEmpty
+              ? versionParts.join(' · ')
+              : 'Specific Edition')
         : 'Master Release';
 
     return GestureDetector(
@@ -92,8 +101,13 @@ class _CollectionAlbumDetailModal extends StatelessWidget {
       child: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final modalWidth = constraints.maxWidth < 680 ? constraints.maxWidth * 0.92 : 600.0;
-            final modalMaxHeight = (constraints.maxHeight - 32).clamp(280.0, 680.0);
+            final modalWidth = constraints.maxWidth < 680
+                ? constraints.maxWidth * 0.92
+                : 600.0;
+            final modalMaxHeight = (constraints.maxHeight - 32).clamp(
+              280.0,
+              680.0,
+            );
 
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -105,7 +119,10 @@ class _CollectionAlbumDetailModal extends StatelessWidget {
                   child: SizedBox(
                     width: modalWidth,
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: 280, maxHeight: modalMaxHeight),
+                      constraints: BoxConstraints(
+                        minHeight: 280,
+                        maxHeight: modalMaxHeight,
+                      ),
                       child: Material(
                         type: MaterialType.transparency,
                         child: _GlassPanel(
@@ -122,7 +139,9 @@ class _CollectionAlbumDetailModal extends StatelessWidget {
                               Positioned(
                                 top: 10,
                                 right: 10,
-                                child: _CloseButton(onTap: () => Navigator.of(context).maybePop()),
+                                child: _CloseButton(
+                                  onTap: () => Navigator.of(context).maybePop(),
+                                ),
                               ),
                             ],
                           ),
@@ -161,9 +180,16 @@ class _GlassPanel extends StatelessWidget {
                 const Color(0xFF131316).withValues(alpha: .97),
               ],
             ),
-            border: Border.all(color: Colors.white.withValues(alpha: .14), width: 1.2),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: .14),
+              width: 1.2,
+            ),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: .55), blurRadius: 50, offset: const Offset(0, 24)),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: .55),
+                blurRadius: 50,
+                offset: const Offset(0, 24),
+              ),
             ],
           ),
           child: child,
@@ -188,7 +214,11 @@ class _CloseButton extends StatelessWidget {
         child: SizedBox(
           width: 34,
           height: 34,
-          child: Icon(Icons.close_rounded, size: 19, color: Colors.white.withValues(alpha: .8)),
+          child: Icon(
+            Icons.close_rounded,
+            size: 19,
+            color: Colors.white.withValues(alpha: .8),
+          ),
         ),
       ),
     );
@@ -228,7 +258,12 @@ class _Chip extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: .25, color: Colors.white.withValues(alpha: .70)),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          letterSpacing: .25,
+          color: Colors.white.withValues(alpha: .70),
+        ),
       ),
     );
   }
@@ -295,7 +330,7 @@ class _EditionSection extends StatelessWidget {
 
   static const String _label = 'EDITION';
   static const String _genericTooltip =
-    "Generic release info\nNo specific edition selected.";
+      "Generic release info\nNo specific edition selected.";
   static const double _spacing = 8;
   static const double _iconReserve = 20; // icon width + its own left spacing
 
@@ -329,7 +364,8 @@ class _EditionSection extends StatelessWidget {
           textScaler: scaler,
         )..layout();
 
-        final needed = labelPainter.width +
+        final needed =
+            labelPainter.width +
             _spacing +
             valuePainter.width +
             (isSpecific ? 0 : _iconReserve);
@@ -359,7 +395,9 @@ class _EditionSection extends StatelessWidget {
             children: [
               Text(_label, style: labelStyle),
               const SizedBox(width: _spacing),
-              Expanded(child: Align(alignment: Alignment.centerRight, child: valueRow)),
+              Expanded(
+                child: Align(alignment: Alignment.centerRight, child: valueRow),
+              ),
             ],
           );
         }
@@ -395,7 +433,10 @@ class _LabelSectionState extends State<_LabelSection> {
 
   @override
   Widget build(BuildContext context) {
-    final style = TextStyle(fontSize: 11.5, color: Colors.white.withValues(alpha: .45));
+    final style = TextStyle(
+      fontSize: 11.5,
+      color: Colors.white.withValues(alpha: .45),
+    );
     final text = 'Label : ${widget.label}';
 
     return LayoutBuilder(
@@ -414,7 +455,9 @@ class _LabelSectionState extends State<_LabelSection> {
             AnimatedCrossFade(
               duration: const Duration(milliseconds: 200),
               alignment: Alignment.topLeft,
-              crossFadeState: _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+              crossFadeState: _expanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
               firstChild: SizedBox(
                 width: double.infinity,
                 child: Text(
@@ -491,7 +534,11 @@ class _GlassActionButton extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: color),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
                 ),
               ),
             ],
@@ -526,8 +573,12 @@ class _Content extends StatelessWidget {
     final tracklist = entry.tracklist ?? const [];
     final label = _formatLabelValue(entry.label);
 
-    final toggleIcon = entry.isWantlist ? Icons.add_rounded : Icons.bookmark_border_rounded;
-    final toggleLabel = entry.isWantlist ? 'Add to Collection' : 'Add to Wantlist';
+    final toggleIcon = entry.isWantlist
+        ? Icons.add_rounded
+        : Icons.bookmark_border_rounded;
+    final toggleLabel = entry.isWantlist
+        ? 'Add to Collection'
+        : 'Add to Wantlist';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -546,13 +597,23 @@ class _Content extends StatelessWidget {
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
-                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .35), blurRadius: 18, offset: const Offset(0, 8))],
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: .35),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
                       child: Stack(
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: SizedBox(width: 138, height: 138, child: cover),
+                            child: SizedBox(
+                              width: 138,
+                              height: 138,
+                              child: cover,
+                            ),
                           ),
                         ],
                       ),
@@ -568,20 +629,34 @@ class _Content extends StatelessWidget {
                         children: [
                           Text(
                             cleanArtistName(entry.artist),
-                            style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: .78)),
+                            style: TextStyle(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withValues(alpha: .78),
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             entry.title,
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800, height: 1.15, letterSpacing: -.3, color: Colors.white),
+                            style: const TextStyle(
+                              fontSize: 21,
+                              fontWeight: FontWeight.w800,
+                              height: 1.15,
+                              letterSpacing: -.3,
+                              color: Colors.white,
+                            ),
                           ),
                           if (entry.year != null) ...[
                             const SizedBox(height: 6),
                             Text(
                               entry.year.toString(),
-                              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: Colors.white.withValues(alpha: .45)),
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white.withValues(alpha: .45),
+                              ),
                             ),
                           ],
                         ],
@@ -592,7 +667,14 @@ class _Content extends StatelessWidget {
               ),
               if (genres.isNotEmpty || styles.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Wrap(spacing: 6, runSpacing: 6, children: [...genres.map(_Chip.new), ...styles.map(_Chip.new)]),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    ...genres.map(_Chip.new),
+                    ...styles.map(_Chip.new),
+                  ],
+                ),
               ],
               // Edition block — always shown (generic master included),
               // neutral glass rectangle, no accent color. Value sits next
@@ -602,13 +684,21 @@ class _Content extends StatelessWidget {
               const SizedBox(height: 12),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   color: Colors.white.withValues(alpha: .06),
-                  border: Border.all(color: Colors.white.withValues(alpha: .10)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: .10),
+                  ),
                 ),
-                child: _EditionSection(value: versionLabel, isSpecific: isSpecificEdition),
+                child: _EditionSection(
+                  value: versionLabel,
+                  isSpecific: isSpecificEdition,
+                ),
               ),
               if (label != null) ...[
                 const SizedBox(height: 10),
@@ -617,7 +707,10 @@ class _Content extends StatelessWidget {
             ],
           ),
         ),
-        const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Divider(height: 1, color: Colors.white12)),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child: Divider(height: 1, color: Colors.white12),
+        ),
         Flexible(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
@@ -632,34 +725,61 @@ class _Content extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
                       'Tracklist unavailable.',
-                      style: TextStyle(fontSize: 12.5, color: Colors.white.withValues(alpha: .45)),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: Colors.white.withValues(alpha: .45),
+                      ),
                     ),
                   )
                 else
-                  ...tracklist.map((t) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 5),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(
-                              width: 28,
-                              child: Text(t.position, style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: .40))),
+                  ...tracklist.map(
+                    (t) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 5),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: 28,
+                            child: Text(
+                              t.position,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white.withValues(alpha: .40),
+                              ),
                             ),
-                            Expanded(
-                              child: Text(t.title, style: TextStyle(fontSize: 13.5, color: Colors.white.withValues(alpha: .82))),
+                          ),
+                          Expanded(
+                            child: Text(
+                              t.title,
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                color: Colors.white.withValues(alpha: .82),
+                              ),
                             ),
-                            if (t.duration.isNotEmpty)
-                              Text(t.duration, style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: .40))),
-                          ],
-                        ),
-                      )),
+                          ),
+                          if (t.duration.isNotEmpty)
+                            Text(
+                              t.duration,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white.withValues(alpha: .40),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
                 if (entry.notes != null && entry.notes!.trim().isNotEmpty) ...[
                   const SizedBox(height: 22),
                   const _SectionLabel('NOTES'),
                   const SizedBox(height: 10),
                   Text(
                     entry.notes!.trim(),
-                    style: TextStyle(fontSize: 12.5, height: 1.4, color: Colors.white.withValues(alpha: .55)),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      height: 1.4,
+                      color: Colors.white.withValues(alpha: .55),
+                    ),
                   ),
                 ],
                 if (onRemove != null || onToggleList != null) ...[
@@ -674,7 +794,8 @@ class _Content extends StatelessWidget {
                             onTap: onToggleList,
                           ),
                         ),
-                      if (onRemove != null && onToggleList != null) const SizedBox(width: 10),
+                      if (onRemove != null && onToggleList != null)
+                        const SizedBox(width: 10),
                       if (onRemove != null)
                         Expanded(
                           child: _GlassActionButton(

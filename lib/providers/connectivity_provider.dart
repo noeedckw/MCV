@@ -23,8 +23,7 @@ class ConnectivityProvider extends ChangeNotifier {
 
   void _update(List<ConnectivityResult> results) {
     final connected =
-        results.isNotEmpty &&
-        !results.contains(ConnectivityResult.none);
+        results.isNotEmpty && !results.contains(ConnectivityResult.none);
 
     if (_hasInternet != connected) {
       _hasInternet = connected;

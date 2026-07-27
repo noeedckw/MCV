@@ -10,17 +10,13 @@ class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
   @override
-  State<MainNavigationScreen> createState() =>
-      _MainNavigationScreenState();
+  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    ExplorerScreen(),
-    CollectionScreen(),
-  ];
+  final List<Widget> _screens = const [ExplorerScreen(), CollectionScreen()];
 
   @override
   Widget build(BuildContext context) {
@@ -33,27 +29,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       backgroundColor: const Color.fromARGB(0, 201, 98, 98),
       body: Stack(
         children: [
-
           // Pages conservées en mémoire
           Stack(
-            children: List.generate(
-              _screens.length,
-              (index) {
-                return IgnorePointer(
-                  ignoring: _currentIndex != index,
+            children: List.generate(_screens.length, (index) {
+              return IgnorePointer(
+                ignoring: _currentIndex != index,
 
-                  child: AnimatedOpacity(
-                    opacity: _currentIndex == index ? 1 : 0,
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOut,
+                child: AnimatedOpacity(
+                  opacity: _currentIndex == index ? 1 : 0,
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
 
-                    child: _screens[index],
-                  ),
-                );
-              },
-            ),
+                  child: _screens[index],
+                ),
+              );
+            }),
           ),
-
 
           // Navbar flottante
           Positioned(

@@ -22,7 +22,8 @@ class StandardCard extends StatelessWidget {
   });
 
   static const double _radius = 10;
-  static const double _coverInset = 8; // ← écart entre le cadre et l'image carrée
+  static const double _coverInset =
+      8; // ← écart entre le cadre et l'image carrée
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +52,12 @@ class StandardCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(_coverInset, _coverInset, _coverInset, 0),
+                padding: const EdgeInsets.fromLTRB(
+                  _coverInset,
+                  _coverInset,
+                  _coverInset,
+                  0,
+                ),
                 child: AspectRatio(
                   aspectRatio: 1,
                   child: cover, // coins carrés, non clippés

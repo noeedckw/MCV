@@ -15,16 +15,16 @@ class TrackInfo {
   });
 
   Map<String, dynamic> toJson() => {
-        'position': position,
-        'title': title,
-        'duration': duration,
-      };
+    'position': position,
+    'title': title,
+    'duration': duration,
+  };
 
   factory TrackInfo.fromJson(Map<String, dynamic> json) => TrackInfo(
-        position: json['position'] as String? ?? '',
-        title: json['title'] as String? ?? '',
-        duration: json['duration'] as String? ?? '',
-      );
+    position: json['position'] as String? ?? '',
+    title: json['title'] as String? ?? '',
+    duration: json['duration'] as String? ?? '',
+  );
 }
 
 class VinylEntry {

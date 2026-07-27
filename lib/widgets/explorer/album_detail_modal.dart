@@ -59,14 +59,21 @@ Future<void> showAlbumDetailModal(
     barrierLabel: 'Close',
     barrierColor: Colors.transparent,
     transitionDuration: transitionDuration,
-    pageBuilder: (context, anim1, anim2) => AlbumDetailModal(initialResult: result),
+    pageBuilder: (context, anim1, anim2) =>
+        AlbumDetailModal(initialResult: result),
     transitionBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+      );
       return AnimatedBuilder(
         animation: curved,
         child: child,
         builder: (context, child) => BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 20 * curved.value, sigmaY: 20 * curved.value),
+          filter: ui.ImageFilter.blur(
+            sigmaX: 20 * curved.value,
+            sigmaY: 20 * curved.value,
+          ),
           child: Container(
             color: Colors.black.withValues(alpha: .5 * curved.value),
             child: FadeTransition(
@@ -121,7 +128,9 @@ class _AlbumDetailModalState extends State<AlbumDetailModal> {
 
   String get _album {
     final title = widget.initialResult['title'] as String? ?? '';
-    return title.contains(' - ') ? title.split(' - ').sublist(1).join(' - ') : title;
+    return title.contains(' - ')
+        ? title.split(' - ').sublist(1).join(' - ')
+        : title;
   }
 
   bool _isSameVersion(Map? a, Map b) {
@@ -134,7 +143,10 @@ class _AlbumDetailModalState extends State<AlbumDetailModal> {
 
   void _toggleWantlist() {
     HapticFeedback.selectionClick();
-    context.read<ExplorerProvider>().toggleWantlist(widget.initialResult, _selectedVersion);
+    context.read<ExplorerProvider>().toggleWantlist(
+      widget.initialResult,
+      _selectedVersion,
+    );
   }
 
   void _selectVersion(Map? version) {
@@ -159,7 +171,8 @@ class _AlbumDetailModalState extends State<AlbumDetailModal> {
     provider.checkCollectionStatus(masterId, selectedVersion: version);
   }
 
-  void _toggleVersions() => setState(() => _versionsExpanded = !_versionsExpanded);
+  void _toggleVersions() =>
+      setState(() => _versionsExpanded = !_versionsExpanded);
 
   // Toggles collection status on/off depending on the current state.
   // Doesn't close the modal anymore: the user can chain collection +
@@ -167,7 +180,10 @@ class _AlbumDetailModalState extends State<AlbumDetailModal> {
   // to reopen it.
   void _toggleCollection() {
     HapticFeedback.mediumImpact();
-    context.read<ExplorerProvider>().toggleCollection(widget.initialResult, _selectedVersion);
+    context.read<ExplorerProvider>().toggleCollection(
+      widget.initialResult,
+      _selectedVersion,
+    );
   }
 
   @override
@@ -188,7 +204,8 @@ class _AlbumDetailModalState extends State<AlbumDetailModal> {
     // has loaded, prefer its image; while it's still loading, use the
     // version's own thumbnail from the versions list instead of the master's
     // cover, so it doesn't flash back and then swap again a moment later.
-    final releaseCover = (provider.releaseDetail?['images'] as List?)?.isNotEmpty == true
+    final releaseCover =
+        (provider.releaseDetail?['images'] as List?)?.isNotEmpty == true
         ? provider.releaseDetail!['images'][0]['uri'] as String?
         : null;
 
@@ -207,14 +224,14 @@ class _AlbumDetailModalState extends State<AlbumDetailModal> {
 
     final rawDate = _selectedVersion != null
         ? (provider.releaseDetail?['released']?.toString() ??
-            _selectedVersion!['released']?.toString())
+              _selectedVersion!['released']?.toString())
         : detail?['released']?.toString();
 
     final fallbackYear = _selectedVersion != null
-      ? (_validYear(provider.releaseDetail?['year']) ??
-          _validYear(_selectedVersion!['year']) ??
-          _validYear(detail?['year']))
-      : _validYear(detail?['year']);
+        ? (_validYear(provider.releaseDetail?['year']) ??
+              _validYear(_selectedVersion!['year']) ??
+              _validYear(detail?['year']))
+        : _validYear(detail?['year']);
 
     String? releaseDate;
     if (rawDate != null && rawDate.isNotEmpty) {
@@ -238,7 +255,8 @@ class _AlbumDetailModalState extends State<AlbumDetailModal> {
     final displayedTracklist = _selectedVersion != null
         ? (releaseTracklist ?? const [])
         : masterTracklist;
-    final isTracklistSwitching = _selectedVersion != null && provider.isLoadingRelease;
+    final isTracklistSwitching =
+        _selectedVersion != null && provider.isLoadingRelease;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -246,7 +264,9 @@ class _AlbumDetailModalState extends State<AlbumDetailModal> {
       child: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final modalWidth = constraints.maxWidth < 680 ? constraints.maxWidth * 0.92 : 600.0;
+            final modalWidth = constraints.maxWidth < 680
+                ? constraints.maxWidth * 0.92
+                : 600.0;
             // Top/bottom breathing margins, set independently. Ceiling
             // only: bounds the space actually available inside the safe
             // area (so never under the system bar / notch / home
@@ -257,64 +277,75 @@ class _AlbumDetailModalState extends State<AlbumDetailModal> {
             const topMargin = 16.0;
             const bottomMargin = 16.0;
             final modalMaxHeight =
-                (constraints.maxHeight - topMargin - bottomMargin).clamp(280.0, 680.0);
+                (constraints.maxHeight - topMargin - bottomMargin).clamp(
+                  280.0,
+                  680.0,
+                );
 
             return Padding(
-              padding: const EdgeInsets.only(top: topMargin, bottom: bottomMargin),
+              padding: const EdgeInsets.only(
+                top: topMargin,
+                bottom: bottomMargin,
+              ),
               child: Align(
                 alignment: Alignment.topCenter,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {},
-                child: SizedBox(
-                  width: modalWidth,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: 280, maxHeight: modalMaxHeight),
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: _GlassPanel(
-                        radius: _radius,
-                        child: Stack(
-                          children: [
-                            if (isLoading)
-                              const _LoadingState()
-                            else if (error != null)
-                              _ErrorState(message: error)
-                            else
-                              _Content(
-                                cover: cover,
-                                artist: _artist,
-                                album: _album,
-                                year: releaseDate,
-                                genres: genres,
-                                styles: styles,
-                                label: label,
-                                notes: notes,
-                                tracklist: displayedTracklist,
-                                isTracklistSwitching: isTracklistSwitching,
-                                versions: versions,
-                                selectedVersion: _selectedVersion,
-                                versionsExpanded: _versionsExpanded,
-                                isSameVersion: _isSameVersion,
-                                onToggleVersions: _toggleVersions,
-                                onSelectVersion: _selectVersion,
-                                onAdd: _toggleCollection,
-                                isInCollection: isInCollection,
-                                isInWantlist: isInWantlist,
-                                onToggleWantlist: _toggleWantlist,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {},
+                  child: SizedBox(
+                    width: modalWidth,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: 280,
+                        maxHeight: modalMaxHeight,
+                      ),
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: _GlassPanel(
+                          radius: _radius,
+                          child: Stack(
+                            children: [
+                              if (isLoading)
+                                const _LoadingState()
+                              else if (error != null)
+                                _ErrorState(message: error)
+                              else
+                                _Content(
+                                  cover: cover,
+                                  artist: _artist,
+                                  album: _album,
+                                  year: releaseDate,
+                                  genres: genres,
+                                  styles: styles,
+                                  label: label,
+                                  notes: notes,
+                                  tracklist: displayedTracklist,
+                                  isTracklistSwitching: isTracklistSwitching,
+                                  versions: versions,
+                                  selectedVersion: _selectedVersion,
+                                  versionsExpanded: _versionsExpanded,
+                                  isSameVersion: _isSameVersion,
+                                  onToggleVersions: _toggleVersions,
+                                  onSelectVersion: _selectVersion,
+                                  onAdd: _toggleCollection,
+                                  isInCollection: isInCollection,
+                                  isInWantlist: isInWantlist,
+                                  onToggleWantlist: _toggleWantlist,
+                                ),
+                              Positioned(
+                                top: 10,
+                                right: 10,
+                                child: _CloseButton(
+                                  onTap: () => Navigator.of(context).maybePop(),
+                                ),
                               ),
-                            Positioned(
-                              top: 10,
-                              right: 10,
-                              child: _CloseButton(onTap: () => Navigator.of(context).maybePop()),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
               ),
             );
           },
@@ -350,7 +381,10 @@ class _GlassPanel extends StatelessWidget {
                 const Color(0xFF131316).withValues(alpha: .97),
               ],
             ),
-            border: Border.all(color: Colors.white.withValues(alpha: .14), width: 1.2),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: .14),
+              width: 1.2,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: .55),
@@ -387,7 +421,11 @@ class _CloseButton extends StatelessWidget {
         child: SizedBox(
           width: 34,
           height: 34,
-          child: Icon(Icons.close_rounded, size: 19, color: Colors.white.withValues(alpha: .8)),
+          child: Icon(
+            Icons.close_rounded,
+            size: 19,
+            color: Colors.white.withValues(alpha: .8),
+          ),
         ),
       ),
     );
@@ -420,7 +458,10 @@ class _ErrorState extends StatelessWidget {
         child: Text(
           message,
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white.withValues(alpha: .6), fontSize: 13),
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: .6),
+            fontSize: 13,
+          ),
         ),
       ),
     );
@@ -443,7 +484,10 @@ class _LabelSectionState extends State<_LabelSection> {
 
   @override
   Widget build(BuildContext context) {
-    final style = TextStyle(fontSize: 11.5, color: Colors.white.withValues(alpha: .45));
+    final style = TextStyle(
+      fontSize: 11.5,
+      color: Colors.white.withValues(alpha: .45),
+    );
     final text = 'Label : ${widget.label}';
 
     return LayoutBuilder(
@@ -462,7 +506,9 @@ class _LabelSectionState extends State<_LabelSection> {
             AnimatedCrossFade(
               duration: const Duration(milliseconds: 200),
               alignment: Alignment.topLeft,
-              crossFadeState: _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+              crossFadeState: _expanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
               firstChild: SizedBox(
                 width: double.infinity,
                 child: Text(
@@ -607,7 +653,11 @@ class _NotesSectionState extends State<_NotesSection> {
 
   @override
   Widget build(BuildContext context) {
-    final style = TextStyle(fontSize: 12.5, height: 1.4, color: Colors.white.withValues(alpha: .55));
+    final style = TextStyle(
+      fontSize: 12.5,
+      height: 1.4,
+      color: Colors.white.withValues(alpha: .55),
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -627,7 +677,9 @@ class _NotesSectionState extends State<_NotesSection> {
             AnimatedCrossFade(
               duration: const Duration(milliseconds: 200),
               alignment: Alignment.topLeft,
-              crossFadeState: _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+              crossFadeState: _expanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
               firstChild: SizedBox(
                 width: double.infinity,
                 child: Text(
@@ -650,7 +702,11 @@ class _NotesSectionState extends State<_NotesSection> {
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: Text(
                     _expanded ? 'Show less' : 'Show more',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white.withValues(alpha: .85)),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white.withValues(alpha: .85),
+                    ),
                   ),
                 ),
               ),
@@ -698,7 +754,11 @@ class _FittedTitles extends StatelessWidget {
   final String album;
   final String? year;
 
-  const _FittedTitles({required this.artist, required this.album, required this.year});
+  const _FittedTitles({
+    required this.artist,
+    required this.album,
+    required this.year,
+  });
 
   static const double _maxHeight = 138; // matches the cover's height
   static const double _artistBase = 15.5;
@@ -706,16 +766,30 @@ class _FittedTitles extends StatelessWidget {
   static const double _albumBase = 21.0;
   static const double _albumMin = 15.0;
 
-  TextStyle _artistStyle(double size) =>
-      TextStyle(fontSize: size, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: .78));
+  TextStyle _artistStyle(double size) => TextStyle(
+    fontSize: size,
+    fontWeight: FontWeight.w600,
+    color: Colors.white.withValues(alpha: .78),
+  );
 
-  TextStyle _albumStyle(double size) =>
-      TextStyle(fontSize: size, fontWeight: FontWeight.w800, height: 1.15, letterSpacing: -.3);
+  TextStyle _albumStyle(double size) => TextStyle(
+    fontSize: size,
+    fontWeight: FontWeight.w800,
+    height: 1.15,
+    letterSpacing: -.3,
+  );
 
-  static const TextStyle _yearStyle =
-      TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500);
+  static const TextStyle _yearStyle = TextStyle(
+    fontSize: 12.5,
+    fontWeight: FontWeight.w500,
+  );
 
-  double _measure(String text, TextStyle style, double maxWidth, TextScaler scaler) {
+  double _measure(
+    String text,
+    TextStyle style,
+    double maxWidth,
+    TextScaler scaler,
+  ) {
     final painter = TextPainter(
       text: TextSpan(text: text, style: style),
       textDirection: ui.TextDirection.ltr,
@@ -732,7 +806,8 @@ class _FittedTitles extends StatelessWidget {
         final scaler = MediaQuery.textScalerOf(context);
 
         final yearHeight = year != null
-            ? _measure(year!, _yearStyle, maxWidth, scaler) + 6 // + spacing above it
+            ? _measure(year!, _yearStyle, maxWidth, scaler) +
+                  6 // + spacing above it
             : 0.0;
 
         double artistSize = _artistBase;
@@ -744,10 +819,22 @@ class _FittedTitles extends StatelessWidget {
         for (double t = 1.0; t >= 0; t -= 0.03) {
           artistSize = (_artistBase * t).clamp(_artistMin, _artistBase);
           albumSize = (_albumBase * t).clamp(_albumMin, _albumBase);
-          final artistHeight = _measure(artist, _artistStyle(artistSize), maxWidth, scaler);
-          final albumHeight = _measure(album, _albumStyle(albumSize), maxWidth, scaler);
+          final artistHeight = _measure(
+            artist,
+            _artistStyle(artistSize),
+            maxWidth,
+            scaler,
+          );
+          final albumHeight = _measure(
+            album,
+            _albumStyle(albumSize),
+            maxWidth,
+            scaler,
+          );
           final total = artistHeight + 4 + albumHeight + yearHeight;
-          if (total <= _maxHeight || (artistSize <= _artistMin && albumSize <= _albumMin)) break;
+          if (total <= _maxHeight ||
+              (artistSize <= _artistMin && albumSize <= _albumMin))
+            break;
         }
 
         return Column(
@@ -759,7 +846,12 @@ class _FittedTitles extends StatelessWidget {
             Text(album, style: _albumStyle(albumSize)),
             if (year != null) ...[
               const SizedBox(height: 6),
-              Text(year!, style: _yearStyle.copyWith(color: Colors.white.withValues(alpha: .45))),
+              Text(
+                year!,
+                style: _yearStyle.copyWith(
+                  color: Colors.white.withValues(alpha: .45),
+                ),
+              ),
             ],
           ],
         );
@@ -813,7 +905,11 @@ class _GlassActionButton extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: color),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
                 ),
               ),
             ],
@@ -885,7 +981,10 @@ class _Content extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   GestureDetector(
-                    onTap: () => showCoverViewer(context, cover: CoverImage(networkUrl: cover)),
+                    onTap: () => showCoverViewer(
+                      context,
+                      cover: CoverImage(networkUrl: cover),
+                    ),
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
@@ -901,7 +1000,11 @@ class _Content extends StatelessWidget {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: SizedBox(width: 138, height: 138, child: CoverImage(networkUrl: cover)),
+                            child: SizedBox(
+                              width: 138,
+                              height: 138,
+                              child: CoverImage(networkUrl: cover),
+                            ),
                           ),
                         ],
                       ),
@@ -922,7 +1025,11 @@ class _Content extends StatelessWidget {
                       // short artist/album gets a bit bigger, a long one
                       // shrinks just enough to stay within the cover's
                       // height instead of overflowing it.
-                      child: _FittedTitles(artist: artist, album: album, year: year),
+                      child: _FittedTitles(
+                        artist: artist,
+                        album: album,
+                        year: year,
+                      ),
                     ),
                   ),
                 ],
@@ -938,7 +1045,10 @@ class _Content extends StatelessWidget {
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
-                  children: [...genres.map(_Chip.new), ...styles.map(_Chip.new)],
+                  children: [
+                    ...genres.map(_Chip.new),
+                    ...styles.map(_Chip.new),
+                  ],
                 ),
               ],
               if (label != null && label!.isNotEmpty) ...[
@@ -984,7 +1094,10 @@ class _Content extends StatelessWidget {
                   transitionBuilder: (child, animation) => FadeTransition(
                     opacity: animation,
                     child: SlideTransition(
-                      position: Tween(begin: const Offset(0, .03), end: Offset.zero).animate(animation),
+                      position: Tween(
+                        begin: const Offset(0, .03),
+                        end: Offset.zero,
+                      ).animate(animation),
                       child: child,
                     ),
                   ),
@@ -995,35 +1108,69 @@ class _Content extends StatelessWidget {
                           children: tracklist.isEmpty
                               ? [
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
                                     child: Text(
                                       'Tracklist unavailable for this edition.',
-                                      style: TextStyle(fontSize: 12.5, color: Colors.white.withValues(alpha: .45)),
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        color: Colors.white.withValues(
+                                          alpha: .45,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ]
                               : tracklist.map((t) {
                                   final track = t as Map;
-                                  final position = track['position'] as String? ?? '';
-                                  final trackTitle = track['title'] as String? ?? '';
-                                  final duration = track['duration'] as String? ?? '';
+                                  final position =
+                                      track['position'] as String? ?? '';
+                                  final trackTitle =
+                                      track['title'] as String? ?? '';
+                                  final duration =
+                                      track['duration'] as String? ?? '';
                                   return Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 5),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 5,
+                                    ),
                                     child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         SizedBox(
                                           width: 28,
-                                          child: Text(position, style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: .40))),
+                                          child: Text(
+                                            position,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.white.withValues(
+                                                alpha: .40,
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                         Expanded(
                                           child: Text(
                                             trackTitle,
-                                            style: TextStyle(fontSize: 13.5, color: Colors.white.withValues(alpha: .82)),
+                                            style: TextStyle(
+                                              fontSize: 13.5,
+                                              color: Colors.white.withValues(
+                                                alpha: .82,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                         if (duration.isNotEmpty)
-                                          Text(duration, style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: .40))),
+                                          Text(
+                                            duration,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.white.withValues(
+                                                alpha: .40,
+                                              ),
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   );
@@ -1056,8 +1203,12 @@ class _Content extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _GlassActionButton(
-                        icon: isInCollection ? Icons.check_rounded : Icons.add_rounded,
-                        label: isInCollection ? 'In Collection' : 'Add to Collection',
+                        icon: isInCollection
+                            ? Icons.check_rounded
+                            : Icons.add_rounded,
+                        label: isInCollection
+                            ? 'In Collection'
+                            : 'Add to Collection',
                         active: isInCollection,
                         // Tapping toggles collection status on/off directly.
                         onTap: onAdd,
@@ -1066,7 +1217,9 @@ class _Content extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _GlassActionButton(
-                        icon: isInWantlist ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                        icon: isInWantlist
+                            ? Icons.bookmark_rounded
+                            : Icons.bookmark_border_rounded,
                         label: isInWantlist ? 'In Wantlist' : 'Add to Wantlist',
                         active: isInWantlist,
                         // Toggle: tapping again removes it from the wantlist.
@@ -1111,9 +1264,9 @@ class _VersionsSection extends StatelessWidget {
   // Explains what picking an edition actually does, and what "Master
   // Release" means, instead of just repeating "select an edition".
   static const String _infoMessage =
-    "Select the pressing you have, or the one you're after.\n"
-    "Not sure which one you got ?\nGo for the Master release, "
-    "the general info for the album, not tied to a specific pressing.";
+      "Select the pressing you have, or the one you're after.\n"
+      "Not sure which one you got ?\nGo for the Master release, "
+      "the general info for the album, not tied to a specific pressing.";
 
   String _summary() {
     if (selected == null) return _genericSummary;
@@ -1155,13 +1308,20 @@ class _VersionsSection extends StatelessWidget {
                     _summary(),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: .85)),
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: .85),
+                    ),
                   ),
                 ),
                 AnimatedRotation(
                   turns: expanded ? 0.5 : 0,
                   duration: const Duration(milliseconds: 200),
-                  child: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white.withValues(alpha: .5)),
+                  child: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Colors.white.withValues(alpha: .5),
+                  ),
                 ),
               ],
             ),
@@ -1186,14 +1346,21 @@ class _VersionsSection extends StatelessWidget {
                       ...versions.map((v) {
                         final version = v as Map;
                         final format = version['format'] as String? ?? '—';
-                        final subtitle = [version['label'], version['country'], version['released']]
-                            .whereType<String>()
-                            .where((s) => s.isNotEmpty)
-                            .join(' · ');
+                        final subtitle =
+                            [
+                                  version['label'],
+                                  version['country'],
+                                  version['released'],
+                                ]
+                                .whereType<String>()
+                                .where((s) => s.isNotEmpty)
+                                .join(' · ');
                         return _VersionOption(
                           label: format,
                           subtitle: subtitle,
-                          selected: selected != null && isSameVersion(selected, version),
+                          selected:
+                              selected != null &&
+                              isSameVersion(selected, version),
                           onTap: () => onSelect(version),
                         );
                       }),
@@ -1231,32 +1398,50 @@ class _VersionOption extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            color: selected ? _kAccent.withValues(alpha: .16) : Colors.white.withValues(alpha: .04),
+            color: selected
+                ? _kAccent.withValues(alpha: .16)
+                : Colors.white.withValues(alpha: .04),
             border: Border.all(
-              color: selected ? _kAccent.withValues(alpha: .55) : Colors.white.withValues(alpha: .07),
+              color: selected
+                  ? _kAccent.withValues(alpha: .55)
+                  : Colors.white.withValues(alpha: .07),
               width: selected ? 1.4 : 1,
             ),
           ),
           child: Row(
             children: [
               Icon(
-                selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                selected
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_off_rounded,
                 size: 18,
-                color: selected ? _kAccent : Colors.white.withValues(alpha: .30),
+                color: selected
+                    ? _kAccent
+                    : Colors.white.withValues(alpha: .30),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: .85))),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: .85),
+                      ),
+                    ),
                     if (subtitle.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 11.5, color: Colors.white.withValues(alpha: .45)),
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: Colors.white.withValues(alpha: .45),
+                        ),
                       ),
                     ],
                   ],

@@ -16,10 +16,7 @@ Future<void> main() async {
   final storage = createStorageService();
   await storage.init();
 
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]);
-
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   final discogsApi = DiscogsApi(dotenv.env['DISCOGS_TOKEN'] ?? '');
 
@@ -35,9 +32,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => CollectionProvider(storage),
-        ),
+        ChangeNotifierProvider(create: (_) => CollectionProvider(storage)),
 
         ChangeNotifierProxyProvider<CollectionProvider, ExplorerProvider>(
           create: (ctx) => ExplorerProvider(
@@ -47,16 +42,10 @@ class MyApp extends StatelessWidget {
           ),
           update: (ctx, collectionProvider, previous) =>
               previous ??
-              ExplorerProvider(
-                discogsApi,
-                storage,
-                collectionProvider,
-              ),
+              ExplorerProvider(discogsApi, storage, collectionProvider),
         ),
 
-        ChangeNotifierProvider(
-          create: (_) => ConnectivityProvider(),
-        ),
+        ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
       ],
       child: MaterialApp(
         title: 'Ma Collection Vinyles',

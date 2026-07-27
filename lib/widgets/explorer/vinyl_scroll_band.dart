@@ -42,14 +42,15 @@ class _VinylScrollBandState extends State<VinylScrollBand>
   void initState() {
     super.initState();
 
-    _controller = AnimationController(
-      vsync: this,
-      duration: Duration(
-        milliseconds: ((_loopWidth / widget.speed) * 1000).round(),
-      ),
-    )
-      ..addListener(_onTick)
-      ..repeat();
+    _controller =
+        AnimationController(
+            vsync: this,
+            duration: Duration(
+              milliseconds: ((_loopWidth / widget.speed) * 1000).round(),
+            ),
+          )
+          ..addListener(_onTick)
+          ..repeat();
   }
 
   void _onTick() {

@@ -37,20 +37,9 @@ class _PillNavBarState extends State<PillNavBar>
     _controller = controller;
 
     _scaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween(begin: 1.0, end: 1.08),
-        weight: 50,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: 1.08, end: 1.0),
-        weight: 50,
-      ),
-    ]).animate(
-      CurvedAnimation(
-        parent: controller,
-        curve: Curves.easeInOut,
-      ),
-    );
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.08), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.08, end: 1.0), weight: 50),
+    ]).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -89,10 +78,7 @@ class _PillNavBarState extends State<PillNavBar>
         child: ClipRRect(
           borderRadius: BorderRadius.circular(999),
           child: BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: 18,
-              sigmaY: 18,
-            ),
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
             child: Container(
               width: _width,
               height: _height,
@@ -114,10 +100,7 @@ class _PillNavBarState extends State<PillNavBar>
                         ? Alignment.centerLeft
                         : Alignment.centerRight,
                     child: scaleAnimation == null
-                        ? const SizedBox(
-                            width: _itemWidth,
-                            height: _height,
-                          )
+                        ? const SizedBox(width: _itemWidth, height: _height)
                         : AnimatedBuilder(
                             animation: scaleAnimation,
                             builder: (context, child) {
@@ -154,9 +137,7 @@ class _PillNavBarState extends State<PillNavBar>
                                               Colors.white.withValues(
                                                 alpha: 0.35,
                                               ),
-                                              Colors.white.withValues(
-                                                alpha: 0,
-                                              ),
+                                              Colors.white.withValues(alpha: 0),
                                             ],
                                           ),
                                         ),
@@ -173,14 +154,16 @@ class _PillNavBarState extends State<PillNavBar>
                     children: [
                       Expanded(
                         child: _NavIcon(
-                          iconBuilder: (color) => SearchVinylIcon(color: color, size: 35),
+                          iconBuilder: (color) =>
+                              SearchVinylIcon(color: color, size: 35),
                           isSelected: widget.currentIndex == 0,
                           onTap: () => widget.onTap(0),
                         ),
                       ),
                       Expanded(
                         child: _NavIcon(
-                          iconBuilder: (color) => VinylIcon(color: color, size: 35),
+                          iconBuilder: (color) =>
+                              VinylIcon(color: color, size: 35),
                           isSelected: widget.currentIndex == 1,
                           onTap: () => widget.onTap(1),
                         ),
@@ -196,7 +179,6 @@ class _PillNavBarState extends State<PillNavBar>
     );
   }
 }
-
 
 class _NavIcon extends StatelessWidget {
   final Widget Function(Color color) iconBuilder;
@@ -218,10 +200,7 @@ class _NavIcon extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        height: 56,
-        child: Center(child: iconBuilder(color)),
-      ),
+      child: SizedBox(height: 56, child: Center(child: iconBuilder(color))),
     );
   }
 }

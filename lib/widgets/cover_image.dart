@@ -1,7 +1,8 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'cover_image_native.dart'
-    if (dart.library.html) 'cover_image_web.dart' as impl;
+    if (dart.library.html) 'cover_image_web.dart'
+    as impl;
 
 class CoverImage extends StatelessWidget {
   final String? localPath;

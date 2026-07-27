@@ -25,11 +25,7 @@ class PageNav extends StatelessWidget {
     );
     final text = Text(
       label,
-      style: TextStyle(
-        color: color,
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-      ),
+      style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600),
     );
 
     return GestureDetector(

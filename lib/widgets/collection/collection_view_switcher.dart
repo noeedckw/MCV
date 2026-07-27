@@ -157,7 +157,8 @@ class _CollectionViewSwitcherState extends State<CollectionViewSwitcher>
                           label: 'Wantlist',
                           count: provider.wantlistCount,
                           selected: provider.view == CollectionView.wantlist,
-                          onTap: () => provider.setView(CollectionView.wantlist),
+                          onTap: () =>
+                              provider.setView(CollectionView.wantlist),
                         ),
                       ),
                     ],
@@ -203,7 +204,11 @@ class _SwitcherTab extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 '$label ($count)',
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: color),
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
               ),
             ],
           ),

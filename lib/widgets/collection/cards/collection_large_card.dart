@@ -30,11 +30,11 @@ class CollectionLargeCard extends StatelessWidget {
   static const double _tagRunSpacing = 8;
 
   TextStyle get _tagTextStyle => TextStyle(
-        fontSize: style.metaFontSize,
-        fontWeight: FontWeight.w600,
-        letterSpacing: .25,
-        color: Colors.white.withValues(alpha: .70),
-      );
+    fontSize: style.metaFontSize,
+    fontWeight: FontWeight.w600,
+    letterSpacing: .25,
+    color: Colors.white.withValues(alpha: .70),
+  );
 
   double _tagWidth(String text, TextStyle textStyle, TextScaler scaler) {
     final painter = TextPainter(
@@ -61,7 +61,9 @@ class CollectionLargeCard extends StatelessWidget {
       final onLastLine = line == _maxTagLines - 1;
       final reserve = onLastLine ? lastLineReserve : 0.0;
       final isFirstOnLine = lineWidth == 0.0;
-      final neededWidth = isFirstOnLine ? w + reserve : lineWidth + _tagSpacing + w + reserve;
+      final neededWidth = isFirstOnLine
+          ? w + reserve
+          : lineWidth + _tagSpacing + w + reserve;
 
       if (neededWidth <= maxWidth) {
         count++;
@@ -114,7 +116,9 @@ class CollectionLargeCard extends StatelessWidget {
             Colors.white.withValues(alpha: muted ? .02 : .03),
           ],
         ),
-        border: Border.all(color: Colors.white.withValues(alpha: muted ? .06 : .08)),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: muted ? .06 : .08),
+        ),
       ),
       child: Text(
         text,
@@ -137,16 +141,20 @@ class CollectionLargeCard extends StatelessWidget {
     // a clear "Master Release" line otherwise. Always a single line.
     final versionParts = <String>[
       if (entry.format != null && entry.format!.isNotEmpty) entry.format!,
-      if (entry.releaseCountry != null && entry.releaseCountry!.isNotEmpty) entry.releaseCountry!,
+      if (entry.releaseCountry != null && entry.releaseCountry!.isNotEmpty)
+        entry.releaseCountry!,
     ];
     final isSpecific = entry.isSpecificEdition;
     final versionTitle = isSpecific
-        ? (versionParts.isNotEmpty ? versionParts.join(' · ') : 'Specific Edition')
+        ? (versionParts.isNotEmpty
+              ? versionParts.join(' · ')
+              : 'Specific Edition')
         : 'Master Release · No specific pressing';
 
     // Mixed tags — label, condition, genres, styles. No date here.
     final allTags = <String>[
-      if (entry.condition != null && entry.condition!.isNotEmpty) entry.condition!,
+      if (entry.condition != null && entry.condition!.isNotEmpty)
+        entry.condition!,
       ...?entry.genres,
       ...?entry.styles,
     ];
@@ -157,7 +165,8 @@ class CollectionLargeCard extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final maxTagsWidth = constraints.maxWidth - (style.textPadding.horizontal);
+            final maxTagsWidth =
+                constraints.maxWidth - (style.textPadding.horizontal);
             final scaler = MediaQuery.textScalerOf(context);
             final fitted = _fitTags(allTags, maxTagsWidth, scaler);
 
@@ -172,7 +181,10 @@ class CollectionLargeCard extends StatelessWidget {
                     Colors.white.withValues(alpha: .02),
                   ],
                 ),
-                border: Border.all(color: Colors.white.withValues(alpha: .10), width: 1),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: .10),
+                  width: 1,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: .35),
@@ -258,7 +270,8 @@ class CollectionLargeCard extends StatelessWidget {
                             runSpacing: _tagRunSpacing,
                             children: [
                               for (final t in fitted.visible) _tag(t),
-                              if (fitted.hiddenCount > 0) _tag('+${fitted.hiddenCount}', muted: true),
+                              if (fitted.hiddenCount > 0)
+                                _tag('+${fitted.hiddenCount}', muted: true),
                             ],
                           ),
                         ],
@@ -266,16 +279,23 @@ class CollectionLargeCard extends StatelessWidget {
                         const SizedBox(height: 10),
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
                             color: Colors.white.withValues(alpha: .06),
-                            border: Border.all(color: Colors.white.withValues(alpha: .12)),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: .12),
+                            ),
                           ),
                           child: Row(
                             children: [
                               Icon(
-                                isSpecific ? Icons.verified_rounded : Icons.album_outlined,
+                                isSpecific
+                                    ? Icons.verified_rounded
+                                    : Icons.album_outlined,
                                 size: 14,
                                 color: Colors.white.withValues(alpha: .60),
                               ),

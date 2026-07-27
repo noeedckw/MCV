@@ -112,7 +112,11 @@ class _CollectionContainerState extends State<CollectionContainer> {
 class MeasureSize extends SingleChildRenderObjectWidget {
   final ValueChanged<Size> onChange;
 
-  const MeasureSize({super.key, required this.onChange, required Widget super.child});
+  const MeasureSize({
+    super.key,
+    required this.onChange,
+    required Widget super.child,
+  });
 
   @override
   _MeasureSizeRenderObject createRenderObject(BuildContext context) {
@@ -120,7 +124,10 @@ class MeasureSize extends SingleChildRenderObjectWidget {
   }
 
   @override
-  void updateRenderObject(BuildContext context, _MeasureSizeRenderObject renderObject) {
+  void updateRenderObject(
+    BuildContext context,
+    _MeasureSizeRenderObject renderObject,
+  ) {
     renderObject.onChange = onChange;
   }
 }

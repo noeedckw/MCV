@@ -95,7 +95,10 @@ class ExplorerProvider extends ChangeNotifier {
   /// de dédup — sinon rouvrir la modale après avoir ajouté une édition
   /// précise affichait à nouveau "Add to Collection" au lieu de "In
   /// Collection", puisque checkCollectionStatus vérifie par masterId.
-  Future<void> toggleCollection(Map<String, dynamic> result, Map? selectedVersion) async {
+  Future<void> toggleCollection(
+    Map<String, dynamic> result,
+    Map? selectedVersion,
+  ) async {
     final masterId = result['id'] as int;
     final releaseId = selectedVersion?['id'] as int?;
 
@@ -280,7 +283,8 @@ class ExplorerProvider extends ChangeNotifier {
   /// la tracklist du master que rien du tout).
   List<TrackInfo>? _tracklistForEntry(Map? selectedVersion) {
     final raw = selectedVersion != null
-        ? (releaseDetail?['tracklist'] as List? ?? masterDetail?['tracklist'] as List?)
+        ? (releaseDetail?['tracklist'] as List? ??
+              masterDetail?['tracklist'] as List?)
         : masterDetail?['tracklist'] as List?;
     return _extractTracklist(raw);
   }
@@ -295,24 +299,26 @@ class ExplorerProvider extends ChangeNotifier {
   ///    (`result['label']`) — celui-là même utilisé par ResultCard/LargeCard
   ///    sur les cards de résultats, souvent une List<String>.
   String? _labelForEntry(Map<String, dynamic> result, Map? selectedVersion) {
-  final releaseLabels = releaseDetail?['labels'] as List?;
-  print('DEBUG label — releaseLabels: $releaseLabels');
-  print('DEBUG label — result["label"]: ${result['label']} (type: ${result['label'].runtimeType})');
-  print('DEBUG label — selectedVersion: $selectedVersion');
+    final releaseLabels = releaseDetail?['labels'] as List?;
+    print('DEBUG label — releaseLabels: $releaseLabels');
+    print(
+      'DEBUG label — result["label"]: ${result['label']} (type: ${result['label'].runtimeType})',
+    );
+    print('DEBUG label — selectedVersion: $selectedVersion');
 
-  if (releaseLabels != null && releaseLabels.isNotEmpty) {
-    final name = releaseLabels.first['name'] as String?;
-    if (name != null && name.isNotEmpty) return name;
+    if (releaseLabels != null && releaseLabels.isNotEmpty) {
+      final name = releaseLabels.first['name'] as String?;
+      if (name != null && name.isNotEmpty) return name;
+    }
+
+    final searchLabel = result['label'];
+    if (searchLabel is List && searchLabel.isNotEmpty) {
+      return searchLabel.cast<String>().join(' • ');
+    }
+    if (searchLabel is String && searchLabel.isNotEmpty) return searchLabel;
+
+    return null;
   }
-
-  final searchLabel = result['label'];
-  if (searchLabel is List && searchLabel.isNotEmpty) {
-    return searchLabel.cast<String>().join(' • ');
-  }
-  if (searchLabel is String && searchLabel.isNotEmpty) return searchLabel;
-
-  return null;
-}
 
   /// Toujours privilégier la plus haute résolution disponible pour l'image
   /// enregistrée en local : l'image du release précis (si édition
@@ -342,15 +348,24 @@ class ExplorerProvider extends ChangeNotifier {
   /// collection ET la wantlist, pour que les deux stockent exactement les
   /// mêmes infos (format/label/genres/styles/tracklist/notes/édition) et que
   /// cliquer sur une entrée affiche toujours tout, peu importe la liste.
-  VinylEntry _buildVinylEntry(Map<String, dynamic> result, Map? selectedVersion) {
+  VinylEntry _buildVinylEntry(
+    Map<String, dynamic> result,
+    Map? selectedVersion,
+  ) {
     final title = result['title'] as String? ?? '';
     final parts = title.split(' - ');
     final artist = parts.isNotEmpty ? parts[0] : 'Inconnu';
     final albumTitle = parts.length > 1 ? parts.sublist(1).join(' - ') : title;
 
-    final releaseId = selectedVersion != null ? selectedVersion['id'] as int? : null;
-    final releaseCountry = selectedVersion != null ? selectedVersion['country'] as String? : null;
-    final releaseDate = selectedVersion != null ? selectedVersion['released'] as String? : null;
+    final releaseId = selectedVersion != null
+        ? selectedVersion['id'] as int?
+        : null;
+    final releaseCountry = selectedVersion != null
+        ? selectedVersion['country'] as String?
+        : null;
+    final releaseDate = selectedVersion != null
+        ? selectedVersion['released'] as String?
+        : null;
 
     final rawYear = releaseDate ?? result['year']?.toString();
     final year = int.tryParse((rawYear ?? '').split('-').first);
@@ -385,13 +400,22 @@ class ExplorerProvider extends ChangeNotifier {
 
   String? _statusCheckedForToken; // remplace int? _statusCheckedForId
 
-  Future<void> checkCollectionStatus(int masterId, {Map? selectedVersion}) async {
+  Future<void> checkCollectionStatus(
+    int masterId, {
+    Map? selectedVersion,
+  }) async {
     final releaseId = selectedVersion?['id'] as int?;
     final token = '$masterId-${releaseId ?? 'generic'}';
     _statusCheckedForToken = token;
 
-    final inCollection = await storage.vinylExistsByDiscogsId(masterId, releaseId: releaseId);
-    final inWantlist = await storage.wantlistExistsByDiscogsId(masterId, releaseId: releaseId);
+    final inCollection = await storage.vinylExistsByDiscogsId(
+      masterId,
+      releaseId: releaseId,
+    );
+    final inWantlist = await storage.wantlistExistsByDiscogsId(
+      masterId,
+      releaseId: releaseId,
+    );
 
     // Si l'utilisateur a changé d'édition (ou fermé la modal) entre-temps,
     // ce résultat est obsolète.
@@ -410,7 +434,10 @@ class ExplorerProvider extends ChangeNotifier {
   /// mêmes infos. Le dédoublonnage reste indexé par masterId (jamais par
   /// releaseId) : un même album ne peut être qu'une seule fois dans la
   /// wantlist, quelle que soit l'édition visée.
-  Future<void> toggleWantlist(Map<String, dynamic> result, Map? selectedVersion) async {
+  Future<void> toggleWantlist(
+    Map<String, dynamic> result,
+    Map? selectedVersion,
+  ) async {
     final discogsId = result['id'] as int;
     final releaseId = selectedVersion?['id'] as int?;
 
