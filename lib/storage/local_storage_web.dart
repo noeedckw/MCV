@@ -31,7 +31,9 @@ class LocalStorageServiceImpl implements LocalStorageService {
         if (db.objectStoreNames.contains(_legacyWantlistStore)) {
           final legacyStore = txn.objectStore(_legacyWantlistStore);
           final unifiedStore = txn.objectStore(_store);
-          await for (final cursor in legacyStore.openCursor(autoAdvance: true)) {
+          await for (final cursor in legacyStore.openCursor(
+            autoAdvance: true,
+          )) {
             final value = Map<String, dynamic>.from(cursor.value as Map);
             value['isWantlist'] = true;
             value.putIfAbsent('condition', () => null);
