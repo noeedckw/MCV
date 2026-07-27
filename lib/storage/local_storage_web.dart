@@ -1,7 +1,6 @@
 import 'dart:convert';
-import 'dart:html';
-import 'dart:indexed_db';
 import 'dart:typed_data';
+import 'package:idb_shim/idb_browser.dart';
 import 'local_storage_service.dart';
 import 'vinyl_entry.dart';
 
@@ -14,28 +13,25 @@ class LocalStorageServiceImpl implements LocalStorageService {
 
   @override
   Future<void> init() async {
-    // v3: 'vinyls' and 'wantlist' become one store, distinguished by the
-    // isWantlist flag on each record, matching the native/drift storage.
-    _db = await window.indexedDB!.open(
+    final idbFactory = getIdbFactory()!;
+    _db = await idbFactory.open(
       'vinyl_collection',
       version: 3,
       onUpgradeNeeded: (VersionChangeEvent event) async {
-        final db = (event.target as Request).result as Database;
-        // NB: only the versionchange transaction from this open request can
-        // touch object stores here — this is the one IndexedDB hands us via
-        // the open request itself, not a freshly-opened transaction.
-        final txn = (event.target as OpenDBRequest).transaction!;
+        // idb_shim expose directement .database et .transaction sur
+        // l'event — plus besoin du cast event.target as Request/OpenDBRequest
+        // qu'on faisait avec dart:indexed_db.
+        final db = event.database;
+        final txn = event.transaction;
 
-        if (!db.objectStoreNames!.contains(_store)) {
+        if (!db.objectStoreNames.contains(_store)) {
           db.createObjectStore(_store, autoIncrement: true, keyPath: 'id');
         }
 
-        if (db.objectStoreNames!.contains(_legacyWantlistStore)) {
+        if (db.objectStoreNames.contains(_legacyWantlistStore)) {
           final legacyStore = txn.objectStore(_legacyWantlistStore);
           final unifiedStore = txn.objectStore(_store);
-          await for (final cursor in legacyStore.openCursor(
-            autoAdvance: true,
-          )) {
+          await for (final cursor in legacyStore.openCursor(autoAdvance: true)) {
             final value = Map<String, dynamic>.from(cursor.value as Map);
             value['isWantlist'] = true;
             value.putIfAbsent('condition', () => null);
@@ -50,13 +46,10 @@ class LocalStorageServiceImpl implements LocalStorageService {
     );
   }
 
-  // NOTE: dart:indexed_db's exact typing for reaching the versionchange
-  // transaction off the open request (OpenDBRequest.transaction) varies a
-  // bit by SDK version — this compiled against the API shape used
-  // elsewhere in your codebase, but please smoke-test the upgrade path in
-  // a browser (bump version, reload against an existing v1/v2 IndexedDB)
-  // before shipping; if `event.target` doesn't resolve to OpenDBRequest in
-  // your SDK, use whatever accessor you already use elsewhere for it.
+  // NOTE: smoke-test le chemin de migration en navigateur (bump de version,
+  // reload sur une IndexedDB v1/v2 existante) avant de shipper — idb_shim
+  // reproduit fidèlement l'API dart:indexed_db mais mérite un test réel du
+  // upgrade path côté navigateur.
 
   VinylEntry _fromMap(Map value) => VinylEntry(
     id: value['id'] as int?,
