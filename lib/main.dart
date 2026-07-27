@@ -48,9 +48,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
       ],
       child: MaterialApp(
-        title: 'Ma Collection Vinyles',
+        title: 'MCV',
         theme: ThemeData(
-          colorSchemeSeed: Colors.deepPurple,
+          colorSchemeSeed: const Color.fromARGB(255, 24, 23, 25),
           brightness: Brightness.dark,
           useMaterial3: true,
         ),

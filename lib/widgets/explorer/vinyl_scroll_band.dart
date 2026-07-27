@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/cover_url.dart';
 
 enum BandDirection { toLeft, toRight }
 
@@ -115,7 +116,7 @@ class _VinylScrollBandState extends State<VinylScrollBand>
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Image.network(
-                url,
+                resolveCoverUrl(url)!,
                 width: widget.itemSize,
                 height: widget.itemSize,
                 fit: BoxFit.cover,

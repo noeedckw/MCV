@@ -5,6 +5,7 @@ import '../storage/local_storage_service.dart';
 import '../storage/vinyl_entry.dart';
 import 'collection_provider.dart';
 import '../utils/discogs_notes.dart';
+import '../utils/cover_url.dart';
 
 class ExplorerProvider extends ChangeNotifier {
   final DiscogsApi discogsApi;
@@ -455,7 +456,7 @@ class ExplorerProvider extends ChangeNotifier {
 
     var coverBytes;
     if (coverUrl != null && coverUrl.isNotEmpty) {
-      final resp = await http.get(Uri.parse(coverUrl));
+      final resp = await http.get(Uri.parse(resolveCoverUrl(coverUrl)!));
       if (resp.statusCode == 200) coverBytes = resp.bodyBytes;
     }
 
@@ -525,7 +526,7 @@ class ExplorerProvider extends ChangeNotifier {
 
     var coverBytes;
     if (coverUrl != null && coverUrl.isNotEmpty) {
-      final resp = await http.get(Uri.parse(coverUrl));
+      final resp = await http.get(Uri.parse(resolveCoverUrl(coverUrl)!));
       if (resp.statusCode == 200) coverBytes = resp.bodyBytes;
     }
 

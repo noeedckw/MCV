@@ -64,7 +64,7 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
       behavior: HitTestBehavior.translucent,
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
-        backgroundColor: const Color.fromARGB(0, 161, 14, 14),
+        backgroundColor: Colors.black,
         body: SafeArea(
           child: Stack(
             children: [

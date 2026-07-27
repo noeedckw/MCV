@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'cover_image_native.dart'
     if (dart.library.html) 'cover_image_web.dart'
     as impl;
+import '../utils/cover_url.dart';
+
 
 class CoverImage extends StatelessWidget {
   final String? localPath;
@@ -17,7 +19,7 @@ class CoverImage extends StatelessWidget {
     if (localPath != null) return impl.buildFileImage(localPath!);
     if (networkUrl != null && networkUrl!.isNotEmpty) {
       return Image.network(
-        networkUrl!,
+        resolveCoverUrl(networkUrl)!,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) =>
             Container(color: Colors.grey[300], child: const Icon(Icons.album)),
