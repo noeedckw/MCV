@@ -29,24 +29,22 @@ class CollectionContainer extends StatefulWidget {
 class _CollectionContainerState extends State<CollectionContainer> {
   final _searchFocusNode = FocusNode();
 
-  // Only ever set from MeasureSize's onChange, which itself only fires
-  // when the header's real size actually changes -> no rebuild loop.
   double _headerHeight = 132;
-
-  // Extra breathing room between the bottom of the header and the first
-  // row of covers, so the grid doesn't start flush against it.
   static const double _headerGap = 12;
 
   @override
   void initState() {
     super.initState();
-    _searchFocusNode.addListener(() {
-      context.read<NavBarVisibilityProvider>().setHidden(_searchFocusNode.hasFocus);
-    });
+    _searchFocusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    context.read<NavBarVisibilityProvider>().setHidden(_searchFocusNode.hasFocus);
   }
 
   @override
   void dispose() {
+    _searchFocusNode.removeListener(_onFocusChange);
     _searchFocusNode.dispose();
     super.dispose();
   }
@@ -66,50 +64,68 @@ class _CollectionContainerState extends State<CollectionContainer> {
     final provider = context.watch<CollectionProvider>();
     final vinyls = provider.filteredVinyls;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: () => _searchFocusNode.unfocus(),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: vinyls.isEmpty
-                ? Padding(
-                    padding: EdgeInsets.only(top: _headerHeight + _headerGap),
-                    child: CollectionEmptyState(
-                      type: _resolveEmptyType(provider),
-                      focusNode: _searchFocusNode,
-                    ),
-                  )
-                : CollectionGrid(
-                    entries: vinyls,
-                    topPadding: _headerHeight + _headerGap,
-                    onTapEntry: widget.onTapEntry ?? (_) {},
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: vinyls.isEmpty
+              ? Padding(
+                  padding: EdgeInsets.only(top: _headerHeight + _headerGap),
+                  child: CollectionEmptyState(
+                    type: _resolveEmptyType(provider),
+                    focusNode: _searchFocusNode,
                   ),
-          ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: MeasureSize(
-              onChange: (size) {
-                if ((size.height - _headerHeight).abs() > 0.5) {
-                  setState(() => _headerHeight = size.height);
-                }
-              },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 8),
-                  const CollectionViewSwitcher(),
-                  const SizedBox(height: 12),
-                  CollectionSearchAndSortRow(focusNode: _searchFocusNode),
-                  const SizedBox(height: 8),
-                ],
+                )
+              : CollectionGrid(
+                  entries: vinyls,
+                  topPadding: _headerHeight + _headerGap,
+                  onTapEntry: widget.onTapEntry ?? (_) {},
+                ),
+        ),
+
+        // Voile qui absorbe le tap pour fermer le clavier, sans laisser
+        // le tap atteindre une cover en dessous. Écoute directement le
+        // FocusNode via AnimatedBuilder -> ne rebuild que ce voile,
+        // jamais tout le container, donc aucun conflit avec les rebuilds
+        // du CollectionProvider pendant la frappe.
+        AnimatedBuilder(
+          animation: _searchFocusNode,
+          builder: (context, _) {
+            final hasFocus = _searchFocusNode.hasFocus;
+            return Positioned.fill(
+              child: IgnorePointer(
+                ignoring: !hasFocus,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _searchFocusNode.unfocus(),
+                ),
               ),
+            );
+          },
+        ),
+
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: MeasureSize(
+            onChange: (size) {
+              if ((size.height - _headerHeight).abs() > 0.5) {
+                setState(() => _headerHeight = size.height);
+              }
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                const CollectionViewSwitcher(),
+                const SizedBox(height: 12),
+                CollectionSearchAndSortRow(focusNode: _searchFocusNode),
+                const SizedBox(height: 8),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
