@@ -2,6 +2,18 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'discogs_cache.dart';
+import 'token_storage_service.dart';
+
+/// Levée quand Discogs répond 401 : la clé enregistrée n'est plus valide
+/// (révoquée, expirée...). Permet à l'UI de forcer un retour à
+/// DiscogsSetupScreen sans confondre ça avec une erreur réseau générique.
+class DiscogsAuthException implements Exception {
+  final String message;
+  const DiscogsAuthException(this.message);
+
+  @override
+  String toString() => message;
+}
 
 class DiscogsApi {
   final String token;
@@ -10,12 +22,39 @@ class DiscogsApi {
   DiscogsApi(this.token, {DiscogsCache? cache})
     : _cache = cache ?? DiscogsCache();
 
+  /// Construit l'instance à partir du token stocké. À utiliser au démarrage,
+  /// une fois que AppGate a confirmé qu'un token existe. Lève une exception
+  /// si aucun token n'est trouvé — ne devrait normalement jamais arriver
+  /// puisque AppGate garde l'accès à l'app.
+  static Future<DiscogsApi> fromStorage(
+    TokenStorageService storage, {
+    DiscogsCache? cache,
+  }) async {
+    final token = await storage.getToken();
+    if (token == null) {
+      throw const DiscogsAuthException('Aucune clé Discogs configurée.');
+    }
+    return DiscogsApi(token, cache: cache);
+  }
+
   static const _baseUrl = 'https://api.discogs.com';
   static const _userAgent = 'VinylCollectionApp/1.0';
 
-  /// Recherche de releases (pressages précis, format Vinyl). Comportement
-  /// inchangé — c'est l'appel existant utilisé par ExplorerProvider et
-  /// ExplorerVinylShowcase.
+  /// Centralise la gestion des statuts d'erreur communs à tous les endpoints.
+  /// Utilisé après chaque appel http.get pour éviter de dupliquer les
+  /// mêmes if/else dans les 5 méthodes.
+  Never _throwForStatus(int statusCode) {
+    if (statusCode == 401) {
+      throw const DiscogsAuthException(
+        'Votre clé Discogs a été refusée. Reconnectez votre compte.',
+      );
+    } else if (statusCode == 429) {
+      throw Exception('Trop de requêtes, réessaie dans quelques secondes.');
+    } else {
+      throw Exception('Erreur Discogs ($statusCode)');
+    }
+  }
+
   Future<List<dynamic>> search(String query) async {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return [];
@@ -33,16 +72,10 @@ class DiscogsApi {
       final results = (jsonDecode(response.body)['results'] as List);
       _cache.set('release', trimmed, results);
       return results;
-    } else if (response.statusCode == 429) {
-      throw Exception('Trop de requêtes, réessaie dans quelques secondes.');
-    } else {
-      throw Exception('Erreur Discogs (${response.statusCode})');
     }
+    _throwForStatus(response.statusCode);
   }
 
-  /// Recherche de masters uniquement (un master = un album, indépendamment
-  /// de ses pressages). À utiliser pour la grille si tu veux ensuite lister
-  /// les versions disponibles au clic via getMasterVersions().
   Future<List<dynamic>> searchMasters(String query) async {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return [];
@@ -60,16 +93,10 @@ class DiscogsApi {
       final results = (jsonDecode(response.body)['results'] as List);
       _cache.set('master', trimmed, results);
       return results;
-    } else if (response.statusCode == 429) {
-      throw Exception('Trop de requêtes, réessaie dans quelques secondes.');
-    } else {
-      throw Exception('Erreur Discogs (${response.statusCode})');
     }
+    _throwForStatus(response.statusCode);
   }
 
-  /// Versions/pressages disponibles pour un master donné, à appeler quand
-  /// l'utilisateur clique sur une card de la grille (résultat de
-  /// searchMasters). Clé de cache basée sur l'ID, pas sur une query texte.
   Future<List<dynamic>> getMasterVersions(int masterId) async {
     final cacheKey = masterId.toString();
     final cached = _cache.get('master_versions', cacheKey);
@@ -85,16 +112,10 @@ class DiscogsApi {
       final versions = (jsonDecode(response.body)['versions'] as List);
       _cache.set('master_versions', cacheKey, versions);
       return versions;
-    } else if (response.statusCode == 429) {
-      throw Exception('Trop de requêtes, réessaie dans quelques secondes.');
-    } else {
-      throw Exception('Erreur Discogs (${response.statusCode})');
     }
+    _throwForStatus(response.statusCode);
   }
 
-  /// Détail complet d'un master : tracklist, genres, styles, images, notes.
-  /// Complémentaire de getMasterVersions() — l'un donne le contenu de
-  /// l'album, l'autre les pressages disponibles.
   Future<Map<String, dynamic>> getMasterDetails(int masterId) async {
     final cacheKeyId = masterId.toString();
     final cached = _cache.get('master_detail', cacheKeyId);
@@ -105,23 +126,12 @@ class DiscogsApi {
 
     if (response.statusCode == 200) {
       final detail = jsonDecode(response.body) as Map<String, dynamic>;
-      // _cache attend une List<dynamic> ; on enveloppe/déballe l'objet unique
-      // pour réutiliser le même DiscogsCache sans changer sa signature.
       _cache.set('master_detail', cacheKeyId, [detail]);
       return detail;
-    } else if (response.statusCode == 429) {
-      throw Exception('Trop de requêtes, réessaie dans quelques secondes.');
-    } else {
-      throw Exception('Erreur Discogs (${response.statusCode})');
     }
+    _throwForStatus(response.statusCode);
   }
 
-  /// Détail complet d'une édition précise (release) : tracklist, notes,
-  /// images, etc. Différent de getMasterDetails() — un master est l'entité
-  /// "album" générique, un release est un pressage précis (deluxe, réédition,
-  /// pays différent...) qui peut avoir sa propre tracklist (bonus tracks,
-  /// disc 2, etc.). Appelé quand l'utilisateur choisit une édition dans la
-  /// modal de détail.
   Future<Map<String, dynamic>> getReleaseDetails(int releaseId) async {
     final cacheKeyId = releaseId.toString();
     final cached = _cache.get('release_detail', cacheKeyId);
@@ -132,17 +142,11 @@ class DiscogsApi {
 
     if (response.statusCode == 200) {
       final detail = jsonDecode(response.body) as Map<String, dynamic>;
-      // Même enveloppe List<dynamic> que master_detail, pour rester
-      // compatible avec la signature existante de DiscogsCache.
       _cache.set('release_detail', cacheKeyId, [detail]);
       return detail;
-    } else if (response.statusCode == 429) {
-      throw Exception('Trop de requêtes, réessaie dans quelques secondes.');
-    } else {
-      throw Exception('Erreur Discogs (${response.statusCode})');
     }
+    _throwForStatus(response.statusCode);
   }
 
-  /// Vide le cache. Utile pour les tests, ou un futur bouton "rafraîchir".
   void clearCache() => _cache.clear();
 }
