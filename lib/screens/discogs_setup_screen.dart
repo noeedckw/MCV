@@ -79,6 +79,7 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
           'Utilisez le bouton ci-dessous pour vérifier que votre clé fonctionne.',
         ),
         cardHeight: 100,
+        cardWidth: 280,
         cardPadding: const EdgeInsets.all(16),
       ),
       OnboardingStep(
@@ -88,6 +89,7 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
           "Recherchez, explorez et ajoutez des vinyles à votre collection personnelle.",
         ),
         cardHeight: 100,
+        cardWidth: 280,
         cardPadding: const EdgeInsets.all(16),
       ),
     ];
@@ -274,7 +276,10 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     return SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                      padding: const EdgeInsets.only(
+                        top: 16,
+                        bottom: 12,
+                      ),
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
                           minHeight: constraints.maxHeight,
@@ -353,7 +358,6 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        icon: const Icon(Icons.open_in_new_rounded, size: 15),
                         label: Text(
                           _s('Create my Discogs key', 'Créer ma clé Discogs'),
                           style: const TextStyle(fontSize: 13),
