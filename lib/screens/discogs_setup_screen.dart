@@ -366,6 +366,7 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
+                        icon: const Icon(Icons.open_in_new_rounded, size: 15),
                         label: Text(
                           _s('Create my Discogs key', 'Créer ma clé Discogs'),
                           style: const TextStyle(fontSize: 13),
