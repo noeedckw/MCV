@@ -293,37 +293,45 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                            Text(
-                              _s('Connect your Discogs account',
-                                  'Connecter votre compte Discogs'),
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.95),
-                                fontSize: 21,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -.4,
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                child: Text(
+                                  _s(
+                                    'Connect your Discogs account',
+                                    'Connecter votre compte Discogs',
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.95),
+                                    fontSize: 21,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -.4,
+                                  ),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _s(
-                                "You need your own Discogs access key to "
-                                "search for vinyls. It's personal and "
-                                "stays on this device only.",
-                                "Une clé d'accès Discogs personnelle est "
-                                "nécessaire pour rechercher des vinyles. "
-                                "Elle reste uniquement sur cet appareil.",
+                              const SizedBox(height: 8),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                child: Text(
+                                  _s(
+                                    "You need your own Discogs access key to "
+                                    "search for vinyls. It's personal and "
+                                    "stays on this device only.",
+                                    "Une clé d'accès Discogs personnelle est "
+                                    "nécessaire pour rechercher des vinyles. "
+                                    "Elle reste uniquement sur cet appareil.",
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.60),
+                                    fontSize: 13.5,
+                                    height: 1.35,
+                                  ),
+                                ),
                               ),
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.60),
-                                fontSize: 13.5,
-                                height: 1.35,
-                              ),
-                            ),
-                            const SizedBox(height: 28),
-                            OnboardingCarousel(steps: _steps),
-                          ],
+                              const SizedBox(height: 28),
+                              OnboardingCarousel(steps: _steps),
+                            ],
                           ),
                         ),
                       ),
