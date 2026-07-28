@@ -132,6 +132,11 @@ class CollectionLargeCard extends StatelessWidget {
     );
   }
 
+  bool get _hasKnownCountry {
+    final c = entry.releaseCountry?.trim();
+    return c != null && c.isNotEmpty && c.toLowerCase() != 'unknown';
+  }
+
   @override
   Widget build(BuildContext context) {
     final year = entry.year?.toString();
@@ -139,10 +144,10 @@ class CollectionLargeCard extends StatelessWidget {
 
     // Edition badge: format + country when it's a specific pressing,
     // a clear "Master Release" line otherwise. Always a single line.
+    // Country is omitted entirely when it's unknown.
     final versionParts = <String>[
       if (entry.format != null && entry.format!.isNotEmpty) entry.format!,
-      if (entry.releaseCountry != null && entry.releaseCountry!.isNotEmpty)
-        entry.releaseCountry!,
+      if (_hasKnownCountry) entry.releaseCountry!.trim(),
     ];
     final isSpecific = entry.isSpecificEdition;
     final versionTitle = isSpecific

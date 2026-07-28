@@ -30,6 +30,22 @@ class ResultCard extends StatelessWidget {
     return value.toString();
   }
 
+  /// Same shape handling as [_formatValue], but keeps each entry separate
+  /// instead of joining them — used for genres, which we now render as
+  /// individual tags rather than one long string.
+  static List<String>? _asStringList(dynamic value) {
+    if (value == null) return null;
+    if (value is List) {
+      final list = value
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+      return list.isEmpty ? null : list;
+    }
+    final s = value.toString().trim();
+    return s.isEmpty ? null : [s];
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = result["title"] as String? ?? "";
@@ -41,7 +57,7 @@ class ResultCard extends StatelessWidget {
     final year = result["year"]?.toString();
     final hasYear = year != null && year.isNotEmpty && year != "0";
     final cover = result["cover_image"] as String?;
-    final genre = _formatValue(result["genre"]);
+    final genres = _asStringList(result["genre"]);
     final country = _formatValue(result["country"]);
     final label = _formatValue(result["label"]);
     final coverWidget = CoverImage(networkUrl: cover);
@@ -53,7 +69,7 @@ class ResultCard extends StatelessWidget {
         album: album,
         year: year,
         hasYear: hasYear,
-        genre: genre,
+        genres: genres,
         country: country,
         label: label,
         style: style,

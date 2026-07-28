@@ -17,14 +17,26 @@ const Color _kAccent = Color(0xFFE3B673);
 /// Mirrors ResultCard's `_formatValue`: Discogs sometimes returns `label`
 /// as a List<String> rather than a single string — join those with " • "
 /// instead of showing a raw Dart list.
+String _stripDisambiguationNumbers(String value) {
+  return value.replaceAll(RegExp(r'\s?\(\d+\)'), '').trim();
+}
+
+String? _validReleased(dynamic value) {
+  if (value == null) return null;
+  final str = value.toString().trim();
+  if (str.isEmpty) return null;
+  if (RegExp(r'^[0-]+$').hasMatch(str)) return null;
+  return str;
+}
+
 String? _formatLabelValue(dynamic value) {
   if (value == null) return null;
-  if (value is List) {
-    if (value.isEmpty) return null;
-    return value.join(' • ');
-  }
-  final str = value.toString();
-  return str.isEmpty ? null : str;
+  final raw = value is List
+      ? (value.isEmpty ? null : value.join(' • '))
+      : value.toString();
+  if (raw == null || raw.isEmpty) return null;
+  final cleaned = _stripDisambiguationNumbers(raw);
+  return cleaned.isEmpty ? null : cleaned;
 }
 
 /// Discogs renvoie parfois `year: 0` quand la date est inconnue — dans ce
@@ -1346,11 +1358,12 @@ class _VersionsSection extends StatelessWidget {
                       ...versions.map((v) {
                         final version = v as Map;
                         final format = version['format'] as String? ?? '—';
+                        final versionLabel = _formatLabelValue(version['label']);
                         final subtitle =
                             [
-                                  version['label'],
-                                  version['country'],
-                                  version['released'],
+                                  versionLabel,
+                                  version['country'] as String?,
+                                  _validReleased(version['released']),
                                 ]
                                 .whereType<String>()
                                 .where((s) => s.isNotEmpty)
@@ -1359,8 +1372,7 @@ class _VersionsSection extends StatelessWidget {
                           label: format,
                           subtitle: subtitle,
                           selected:
-                              selected != null &&
-                              isSameVersion(selected, version),
+                              selected != null && isSameVersion(selected, version),
                           onTap: () => onSelect(version),
                         );
                       }),
@@ -1436,10 +1448,9 @@ class _VersionOption extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 11.5,
+                          height: 1.3,
                           color: Colors.white.withValues(alpha: .45),
                         ),
                       ),

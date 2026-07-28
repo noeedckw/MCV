@@ -53,16 +53,24 @@ Future<void> showCollectionAlbumDetail(
   );
 }
 
+/// Discogs suffixe parfois les noms (labels, artistes, etc.) d'un numéro
+/// de désambiguation entre parenthèses, ex: "Warp Records (2)" -> on ne
+/// veut garder que "Warp Records". Même logique que dans
+/// AlbumDetailModal._stripDisambiguationNumbers.
+String _stripDisambiguationNumbers(String value) {
+  return value.replaceAll(RegExp(r'\s?\(\d+\)'), '').trim();
+}
+
 /// Mirrors ResultCard's `_formatValue`: label peut être une List<String>
 /// ou une string simple selon comment c'est stocké dans VinylEntry.
 String? _formatLabelValue(dynamic value) {
   if (value == null) return null;
-  if (value is List) {
-    if (value.isEmpty) return null;
-    return value.join(' • ');
-  }
-  final str = value.toString();
-  return str.isEmpty ? null : str;
+  final raw = value is List
+      ? (value.isEmpty ? null : value.join(' • '))
+      : value.toString();
+  if (raw == null || raw.isEmpty) return null;
+  final cleaned = _stripDisambiguationNumbers(raw);
+  return cleaned.isEmpty ? null : cleaned;
 }
 
 class _CollectionAlbumDetailModal extends StatelessWidget {
