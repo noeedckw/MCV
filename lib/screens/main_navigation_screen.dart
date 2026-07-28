@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -19,10 +21,45 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = const [ExplorerScreen(), CollectionScreen()];
 
+  // Délai avant que la navbar ne réapparaisse une fois la condition
+  // de hide levée (ex: le temps que le clavier redescende).
+  static const _reappearDelay = Duration(milliseconds: 600);
+
+  // Durées du fade, différentes selon le sens.
+  static const _fadeOutDuration = Duration(milliseconds: 200);
+  static const _fadeInDuration = Duration(milliseconds: 500);
+
+  bool _visible = true;
+  bool _lastHide = false;
+  Timer? _reappearTimer;
+
+  void _syncVisibility(bool hide) {
+    if (hide == _lastHide) return;
+    _lastHide = hide;
+
+    if (hide) {
+      _reappearTimer?.cancel();
+      setState(() => _visible = false);
+    } else {
+      _reappearTimer?.cancel();
+      _reappearTimer = Timer(_reappearDelay, () {
+        if (mounted) setState(() => _visible = true);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _reappearTimer?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final hideForModal = context.watch<ExplorerProvider>().isDetailModalOpen ||
       context.watch<NavBarVisibilityProvider>().hidden;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncVisibility(hideForModal));
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(0, 201, 98, 98),
@@ -48,31 +85,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             right: 0,
             bottom: 16,
             child: IgnorePointer(
-              ignoring: hideForModal,
-              child: AnimatedSlide(
-                // Réapparition plus lente + overshoot ("pop")
-                duration: Duration(milliseconds: hideForModal ? 220 : 800),
-                curve: hideForModal ? Curves.easeIn : Curves.easeOutBack,
-                offset: hideForModal ? const Offset(0, 0.6) : Offset.zero,
-                child: AnimatedScale(
-                  duration: Duration(milliseconds: hideForModal ? 220 : 800),
-                  curve: hideForModal ? Curves.easeIn : Curves.easeOutBack,
-                  scale: hideForModal ? 0.85 : 1.0,
-                  child: AnimatedOpacity(
-                    duration: Duration(milliseconds: hideForModal ? 180 : 350),
-                    curve: Curves.easeOut,
-                    opacity: hideForModal ? 0 : 1,
-                    child: SafeArea(
-                      child: PillNavBar(
-                        currentIndex: _currentIndex,
-                        onTap: (index) {
-                          if (index == _currentIndex) return;
-                          setState(() {
-                            _currentIndex = index;
-                          });
-                        },
-                      ),
-                    ),
+              ignoring: !_visible,
+              child: AnimatedOpacity(
+                duration: _visible ? _fadeInDuration : _fadeOutDuration,
+                curve: Curves.easeInOut,
+                opacity: _visible ? 1 : 0,
+                child: SafeArea(
+                  child: PillNavBar(
+                    currentIndex: _currentIndex,
+                    onTap: (index) {
+                      if (index == _currentIndex) return;
+                      setState(() {
+                        _currentIndex = index;
+                      });
+                    },
                   ),
                 ),
               ),
