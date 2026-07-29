@@ -26,7 +26,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   static const _reappearDelay = Duration(milliseconds: 600);
 
   // Durées du fade, différentes selon le sens.
-  static const _fadeOutDuration = Duration(milliseconds: 50);
+  static const _fadeOutDuration = Duration(milliseconds: 0);
   static const _fadeInDuration = Duration(milliseconds: 600);
 
   bool _visible = true;
