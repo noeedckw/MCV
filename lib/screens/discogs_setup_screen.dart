@@ -349,7 +349,7 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
               // (padding horizontal augmenté + largeur max), toujours
               // collé en bas de l'écran.
               Padding(
-                padding: const EdgeInsets.fromLTRB(32, 0, 32, 16),
+                padding: const EdgeInsets.fromLTRB(32, 0, 32, 24),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 340),

@@ -121,7 +121,7 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
       // Le cache de DiscogsApi garantit qu'un genre déjà recherché ne
       // redéclenche pas d'appel réseau, même si ce widget est reconstruit
       // avec le même genre (ex: retour sur l'écran).
-      final results = await discogsApi.search(widget.genreAccent.genre);
+      final results = await discogsApi.searchByAccent(widget.genreAccent);
 
       if (!mounted || loadId != _loadId) return;
 

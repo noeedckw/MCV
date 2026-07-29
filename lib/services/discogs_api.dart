@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 
 import 'discogs_cache.dart';
 import 'token_storage_service.dart';
+import '../widgets/explorer/genre_accent.dart';
 
 /// Levée quand Discogs répond 401 : la clé enregistrée n'est plus valide
 /// (révoquée, expirée...). Permet à l'UI de forcer un retour à
@@ -146,6 +147,65 @@ class DiscogsApi {
       return detail;
     }
     _throwForStatus(response.statusCode);
+  }
+
+  /// Recherche des releases vinyle par genre musical (ex: "Rock", "Jazz",
+  /// "Hip Hop"), via le paramètre `genre` de l'API Discogs — à ne pas
+  /// confondre avec `search()` qui fait une recherche texte libre sur
+  /// titre/artiste via `q=`.
+  ///
+  /// Le cache utilise sa propre clé ('genre') pour ne jamais collisionner
+  /// avec les résultats de search() ou searchMasters() même si la chaîne
+  /// est identique.
+  Future<List<dynamic>> searchByGenre(String genre) async {
+    final trimmed = genre.trim();
+    if (trimmed.isEmpty) return [];
+
+    final cached = _cache.get('genre', trimmed);
+    if (cached != null) return cached;
+
+    final url = Uri.parse(
+      '$_baseUrl/database/search?genre=${Uri.encodeComponent(trimmed)}&type=release&format=Vinyl&token=$token',
+    );
+
+    final response = await http.get(url, headers: {'User-Agent': _userAgent});
+
+    if (response.statusCode == 200) {
+      final results = (jsonDecode(response.body)['results'] as List);
+      _cache.set('genre', trimmed, results);
+      return results;
+    }
+    _throwForStatus(response.statusCode);
+  }
+
+  /// Variante par style (sous-catégorie plus précise chez Discogs, ex:
+  /// "Techno", "Punk", "House"). Utile si le genre seul renvoie des
+  /// résultats trop larges.
+  Future<List<dynamic>> searchByStyle(String style) async {
+    final trimmed = style.trim();
+    if (trimmed.isEmpty) return [];
+
+    final cached = _cache.get('style', trimmed);
+    if (cached != null) return cached;
+
+    final url = Uri.parse(
+      '$_baseUrl/database/search?style=${Uri.encodeComponent(trimmed)}&type=release&format=Vinyl&token=$token',
+    );
+
+    final response = await http.get(url, headers: {'User-Agent': _userAgent});
+
+    if (response.statusCode == 200) {
+      final results = (jsonDecode(response.body)['results'] as List);
+      _cache.set('style', trimmed, results);
+      return results;
+    }
+    _throwForStatus(response.statusCode);
+  }
+
+  Future<List<dynamic>> searchByAccent(GenreAccent accent) {
+    return accent.discogsStyle != null
+        ? searchByStyle(accent.discogsStyle!)
+        : searchByGenre(accent.discogsGenre);
   }
 
   void clearCache() => _cache.clear();
