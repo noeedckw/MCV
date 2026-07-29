@@ -33,20 +33,29 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
   /// Petit helper de traduction locale à l'écran : _s(anglais, français)
   String _s(String en, String fr) => _isFrench ? fr : en;
 
-  // Chemins d'image des étapes 1 et 2 : avant définis dans
-  // OnboardingVisuals (supprimé lors du rework), maintenant ici puisque
-  // c'est le seul endroit qui les utilise.
+  // Chemins d'image des étapes : avant définis dans OnboardingVisuals
+  // (supprimé lors du rework), maintenant ici puisque c'est le seul
+  // endroit qui les utilise.
   static const String _step1Image = 'assets/images/discogs_create_account.png';
-  static const String _step2Image = 'assets/images/discogs_create_token.png';
+
+  // Steps 2 et 3 : image différente selon la langue (ex. capture d'écran
+  // avec du texte visible dessus). TODO: remplacer ces noms placeholder
+  // par les vrais assets et les déclarer dans pubspec.yaml
+  // (flutter: assets:) avant de relancer l'app.
+  static const String _step2ImageEn = 'assets/images/generate_token_eng.png';
+  static const String _step2ImageFr = 'assets/images/generate_token_fr.png';
+  static const String _step3ImageEn = 'assets/images/copy_token_eng.jpeg';
+  static const String _step3ImageFr = 'assets/images/copy_token_fr.jpeg';
+
+  String get _step2Image => _s(_step2ImageEn, _step2ImageFr);
+  String get _step3Image => _s(_step3ImageEn, _step3ImageFr);
 
   List<OnboardingStep> get _steps => [
       OnboardingStep(
-        title: _s('Go to Discogs', 'Allez sur Discogs'),
+        title: _s('Create a Discogs account', 'Créez un compte Discogs'),
         description: _s(
-          "Create a free Discogs account if you don't already have one. "
-          "It lets you access your collection and create your personal token.",
-          "Créez un compte Discogs gratuit si vous n'en avez pas déjà un. "
-          "Il vous permettra d'accéder à votre collection et de créer votre token personnel.",
+          "Create a free Discogs account if you don't already have one.",
+          "Créez gratuitement un compte Discogs si vous n'en avez pas encore un.",
         ),
         imageUrl: _step1Image,
         imagePosition: OnboardingImagePosition.left,
@@ -57,36 +66,37 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
         cardPadding: const EdgeInsets.all(14),
       ),
       OnboardingStep(
-        title: _s('Generate & paste your key',
-            'Générez et collez votre clé'),
+        title: _s('Go to Developer Settings', 'Paramètres développeur'),
         description: _s(
-          "Copy the value after \"Current token:\""
-          "\nand paste it below.",
-          "Copiez la valeur après « Token actuel : »"
-          "\net collez-la ci-dessous.",
+          'Click the "Generate new token" button.',
+          'Appuyez sur « Générer un nouveau jeton ».',
         ),
         imageUrl: _step2Image,
-        imagePosition: OnboardingImagePosition.top,
-        imageHeight: 64,
-        cardWidth: 270,
-        cardHeight: 175,
+        imagePosition: OnboardingImagePosition.right,
+        imageHeight: 115,
+        imageWidth: 165,
+        cardWidth: 345,
+        cardHeight: 145,
+        cardPadding: const EdgeInsets.all(12),
+      ),
+      OnboardingStep(
+        title: _s('Copy your token', 'Copiez votre jeton'),
+        description: _s(
+          'Copy the value shown after \n"Current token: "and paste it below.',
+          "Copiez la valeur affichée après \n« Jeton actuel : » puis collez-la ci-dessous.",
+        ),
+        imageUrl: _step3Image,
+        imagePosition: OnboardingImagePosition.below,
+        imageHeight: 80,
+        cardWidth: 230,
+        cardHeight: 210,
         cardPadding: const EdgeInsets.all(14),
       ),
       OnboardingStep(
-        title: _s('Check the connection', 'Vérifiez la connexion'),
+        title: _s('Verify & enjoy', 'Vérifiez et profitez'),
         description: _s(
-          'Use the button below to verify that your key works.',
-          'Utilisez le bouton ci-dessous pour vérifier que votre clé fonctionne.',
-        ),
-        cardHeight: 100,
-        cardWidth: 280,
-        cardPadding: const EdgeInsets.all(16),
-      ),
-      OnboardingStep(
-        title: _s('Enjoy the app', 'Profitez de l\u2019app'),
-        description: _s(
-          "Search, explore and add vinyls to your personal collection.",
-          "Recherchez, explorez et ajoutez des vinyles à votre collection personnelle.",
+          'Verify your token and start using the app.',
+          'Vérifiez votre jeton puis profitez de l\u2019application.',
         ),
         cardHeight: 100,
         cardWidth: 280,
@@ -314,13 +324,8 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
                                 padding: const EdgeInsets.symmetric(horizontal: 20),
                                 child: Text(
                                   _s(
-                                    "You need your own Discogs access key to "
-                                    "search for vinyls. It's personal and "
-                                    "stays on this device only.",
-                                    "Une clé d'accès Discogs personnelle est "
-                                    "nécessaire pour rechercher des vinyles. "
-                                    "Elle reste uniquement sur cet appareil.",
-                                  ),
+                                    "Follow the 4 steps below to get started in just a few minutes.",
+                                    "Suivez les 4 étapes ci-dessous pour commencer en quelques minutes."),
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.60),

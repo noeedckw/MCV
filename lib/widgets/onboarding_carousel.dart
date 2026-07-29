@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'glass_container.dart';
 
 /// Position de l'image par rapport au texte dans une carte.
-/// - [top]  : texte en haut, image pleine largeur en dessous.
-/// - [left] : petite image à gauche, texte à droite.
-enum OnboardingImagePosition { top, left }
+/// - [right] : texte à gauche, image à droite (Row).
+/// - [left]  : image à gauche, texte à droite (Row).
+/// - [below] : texte en haut, image pleine largeur en dessous (Column).
+enum OnboardingImagePosition { right, left, below }
 
 /// Une étape du carrousel.
 ///
@@ -42,6 +43,8 @@ class OnboardingStep {
 
   // --- Taille et style de l'image (si [imageUrl] != null) ---
 
+  /// Ignorée si [imagePosition] est [OnboardingImagePosition.below] (l'image
+  /// prend alors toute la largeur disponible, cf. [double.infinity]).
   final double imageWidth;
   final double imageHeight;
   final BoxFit imageFit;
@@ -49,7 +52,8 @@ class OnboardingStep {
 
   // --- Espacements internes, ajustables indépendamment ---
 
-  /// Espace entre l'image et le texte (utilisé seulement en [OnboardingImagePosition.left]/[top]).
+  /// Espace entre l'image et le texte (utilisé pour les 3 positions :
+  /// horizontal en [left]/[right], vertical en [below]).
   final double gapImageText;
 
   /// Espace entre le titre et la description.
@@ -65,7 +69,7 @@ class OnboardingStep {
     required this.description,
     required this.cardHeight,
     this.imageUrl,
-    this.imagePosition = OnboardingImagePosition.top,
+    this.imagePosition = OnboardingImagePosition.right,
     this.cardWidth,
     this.cardPadding = const EdgeInsets.all(18),
     this.cardBorderRadius = 22,
@@ -257,35 +261,47 @@ class _StepCard extends StatelessWidget {
     if (step.imageUrl == null) return text;
 
     final image = SizedBox(
-      width: step.imagePosition == OnboardingImagePosition.left
-          ? step.imageWidth
-          : double.infinity,
+      width: step.imagePosition == OnboardingImagePosition.below
+          ? double.infinity
+          : step.imageWidth,
       height: step.imageHeight,
       child: _buildImage(step.imageUrl!, step.imageFit, step.imageBorderRadius),
     );
 
-    if (step.imagePosition == OnboardingImagePosition.left) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          image,
-          SizedBox(width: step.gapImageText),
-          Flexible(child: text),
-        ],
-      );
-    }
+    switch (step.imagePosition) {
+      case OnboardingImagePosition.left:
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            image,
+            SizedBox(width: step.gapImageText),
+            Flexible(child: text),
+          ],
+        );
 
-    // top
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        text,
-        SizedBox(height: step.gapImageText),
-        image,
-      ],
-    );
+      case OnboardingImagePosition.right:
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(child: text),
+            SizedBox(width: step.gapImageText),
+            image,
+          ],
+        );
+
+      case OnboardingImagePosition.below:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            text,
+            SizedBox(height: step.gapImageText),
+            image,
+          ],
+        );
+    }
   }
 }
 
