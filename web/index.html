@@ -28,5 +28,21 @@
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    function forceResize() {
+      window.dispatchEvent(new Event('resize'));
+    }
+
+    window.addEventListener('load', function () {
+      setTimeout(forceResize, 300);
+      setTimeout(forceResize, 1000); // filet si Flutter met plus de temps à se peindre
+    });
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') {
+        forceResize();
+      }
+    });
+  </script>
 </body>
 </html>
