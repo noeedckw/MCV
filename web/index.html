@@ -7,17 +7,14 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
 
-  <!-- Viewport -->
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 
-  <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="mcv">
   <link rel="apple-touch-icon" href="icons/mcv_logo.png">
 
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="icons/mcv_logo.png"/>
 
   <title>My Collection of Vinyles</title>
@@ -29,94 +26,31 @@
       height: 100%;
       margin: 0;
     }
-
-    /* Petit écran de chargement affiché uniquement pendant le rechargement
-       automatique unique (quelques centaines de ms), pour éviter un flash
-       blanc pendant que le navigateur recharge la page. */
-    #boot-loader {
-      position: fixed;
-      inset: 0;
-      background-color: #000000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-
-    #boot-loader img {
-      width: 64px;
-      height: 64px;
-      opacity: 0.85;
-      animation: boot-pulse 1s ease-in-out infinite;
-    }
-
-    @keyframes boot-pulse {
-      0%, 100% { opacity: 0.4; }
-      50% { opacity: 0.9; }
-    }
   </style>
 </head>
 <body>
-  <div id="boot-loader">
-    <img src="icons/mcv_logo.png" alt="">
-  </div>
-
   <script>
-    // FIX : en PWA standalone iOS, Flutter Web lit parfois des métriques
-    // de viewport incorrectes lors du tout premier lancement (bug connu,
-    // cf. rapport). Un rechargement (comme fermer/rouvrir l'app) force
-    // iOS à stabiliser ses métriques avant que Flutter ne les lise.
-    //
-    // Ici, on reproduit cet effet automatiquement, UNE SEULE FOIS par
-    // lancement réel de l'app (sessionStorage est vidé quand l'app est
-    // complètement fermée sur iOS, donc ça ne boucle pas et ne se
-    // redéclenche pas si l'utilisateur revient juste d'un lien externe).
-    (function () {
-      var alreadyReloaded = false;
-      try {
-        alreadyReloaded = sessionStorage.getItem('mcv_booted') === '1';
-      } catch (e) {
-        // sessionStorage indisponible (mode privé, etc.) : on ne
-        // reload pas pour éviter une boucle infinie potentielle.
-        alreadyReloaded = true;
-      }
+    // Fonction exposée à Dart (appelée uniquement depuis un vrai tap
+    // utilisateur, via l'écran de démarrage Flutter). Force un vrai
+    // cycle ouverture/fermeture du clavier iOS, ce qui corrige le
+    // décalage de hit-test propre au mode PWA standalone.
+    window.mcvWarmupKeyboard = function () {
+      var hiddenInput = document.createElement('input');
+      hiddenInput.setAttribute('type', 'text');
+      hiddenInput.setAttribute(
+        'style',
+        'position:fixed; top:-1000px; left:-1000px; opacity:0; height:1px; width:1px; pointer-events:none;'
+      );
+      document.body.appendChild(hiddenInput);
+      hiddenInput.focus();
 
-      if (!alreadyReloaded) {
-        try {
-          sessionStorage.setItem('mcv_booted', '1');
-        } catch (e) {}
-
-        // Petit délai pour laisser iOS finir de stabiliser ses metrics
-        // avant le reload (empirique, ajustable si besoin).
-        setTimeout(function () {
-          window.location.reload();
-        }, 400);
-
-        // On ne charge pas flutter_bootstrap.js pendant ce court instant :
-        // pas la peine de démarrer Flutter juste pour le recharger
-        // aussitôt après.
-      } else {
-        // Deuxième chargement (ou visite normale) : démarre Flutter et
-        // retire l'écran de chargement une fois le premier frame prêt.
-        var script = document.createElement('script');
-        script.src = 'flutter_bootstrap.js';
-        script.async = true;
-        document.body.appendChild(script);
-
-        window.addEventListener('flutter-first-frame', function () {
-          var loader = document.getElementById('boot-loader');
-          if (loader) loader.remove();
-        });
-
-        // Filet de sécurité : si l'event 'flutter-first-frame' ne se
-        // déclenche pas (versions plus anciennes), retire quand même
-        // le loader après un délai raisonnable.
-        setTimeout(function () {
-          var loader = document.getElementById('boot-loader');
-          if (loader) loader.remove();
-        }, 3000);
-      }
-    })();
+      setTimeout(function () {
+        hiddenInput.blur();
+        document.body.removeChild(hiddenInput);
+      }, 50);
+    };
   </script>
+
+  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

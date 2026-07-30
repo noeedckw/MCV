@@ -11,6 +11,7 @@ import 'providers/connectivity_provider.dart';
 import 'providers/nav_bar_visibility_provider.dart';
 import 'screens/main_navigation_screen.dart';
 import 'screens/discogs_setup_screen.dart';
+import 'splash_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,9 +24,11 @@ Future<void> main() async {
   runApp(AppRoot(storage: storage));
 }
 
-/// Porte d'entrée : vérifie qu'une clé Discogs existe avant de construire
-/// MyApp (et donc DiscogsApi + tous les providers qui en dépendent).
-/// Remplace l'ancien chargement direct via dotenv dans main().
+/// Racine de l'app : un seul MaterialApp, un seul SplashGate monté une
+/// seule fois. Le contenu en dessous (loading / setup Discogs / app
+/// principale) change librement selon l'état sans jamais démonter le
+/// SplashGate, donc l'animation d'entrée ne se rejoue pas à chaque
+/// changement d'état.
 class AppRoot extends StatefulWidget {
   final dynamic storage;
   const AppRoot({super.key, required this.storage});
@@ -47,6 +50,7 @@ class _AppRootState extends State<AppRoot> {
   }
 
   Future<void> _checkToken() async {
+    _tokenStorageService.deleteToken();
     final hasToken = await _tokenStorageService.hasToken();
     DiscogsApi? api;
     if (hasToken) {
@@ -59,68 +63,59 @@ class _AppRootState extends State<AppRoot> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildContent() {
     if (_isLoading) {
-      return const MaterialApp(
-        home: Scaffold(body: Center(child: CircularProgressIndicator())),
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_discogsApi == null) {
-      return MaterialApp(
-        theme: ThemeData(
-          colorSchemeSeed: const Color.fromARGB(255, 24, 23, 25),
-          brightness: Brightness.dark,
-          useMaterial3: true,
-        ),
-        home: DiscogsSetupScreen(
-          tokenStorageService: _tokenStorageService,
-          onConfigured: () async {
-            final api = await DiscogsApi.fromStorage(_tokenStorageService);
-            setState(() => _discogsApi = api);
-          },
-        ),
+      return DiscogsSetupScreen(
+        tokenStorageService: _tokenStorageService,
+        onConfigured: () async {
+          final api = await DiscogsApi.fromStorage(_tokenStorageService);
+          if (!mounted) return;
+          setState(() => _discogsApi = api);
+        },
       );
     }
 
-    return MyApp(storage: widget.storage, discogsApi: _discogsApi!);
-  }
-}
+    final api = _discogsApi!;
 
-class MyApp extends StatelessWidget {
-  final storage;
-  final DiscogsApi discogsApi;
-  const MyApp({super.key, required this.storage, required this.discogsApi});
-
-  @override
-  Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => CollectionProvider(storage)),
-
+        ChangeNotifierProvider(
+          create: (_) => CollectionProvider(widget.storage),
+        ),
         ChangeNotifierProxyProvider<CollectionProvider, ExplorerProvider>(
           create: (ctx) => ExplorerProvider(
-            discogsApi,
-            storage,
+            api,
+            widget.storage,
             ctx.read<CollectionProvider>(),
           ),
           update: (ctx, collectionProvider, previous) =>
               previous ??
-              ExplorerProvider(discogsApi, storage, collectionProvider),
+              ExplorerProvider(api, widget.storage, collectionProvider),
         ),
-
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ChangeNotifierProvider(create: (_) => NavBarVisibilityProvider()),
       ],
-      child: MaterialApp(
-        title: 'MCV',
-        theme: ThemeData(
-          colorSchemeSeed: const Color.fromARGB(255, 24, 23, 25),
-          brightness: Brightness.dark,
-          useMaterial3: true,
-        ),
-        home: const MainNavigationScreen(),
+      child: const MainNavigationScreen(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'MCV',
+      theme: ThemeData(
+        colorSchemeSeed: const Color.fromARGB(255, 24, 23, 25),
+        brightness: Brightness.dark,
+        useMaterial3: true,
+      ),
+      home: SplashGate(
+        child: Builder(builder: (context) => _buildContent()),
       ),
     );
   }
