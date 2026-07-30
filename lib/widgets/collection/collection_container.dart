@@ -31,6 +31,26 @@ class _CollectionContainerState extends State<CollectionContainer> {
   CollectionView? _lastView;
   bool _viewChangeFromSwipe = false;
 
+  bool _emptyImagesPrecached = false;
+
+  static const _emptyStateAssets = [
+    "assets/images/empty_collection_vinyl.png",
+    "assets/images/empty_wantlist_vinyl.png",
+    "assets/images/no_results_vinyl_1.png",
+    "assets/images/no_results_vinyl_2.png",
+  ];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_emptyImagesPrecached) {
+      _emptyImagesPrecached = true;
+      for (final path in _emptyStateAssets) {
+        precacheImage(AssetImage(path), context);
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();

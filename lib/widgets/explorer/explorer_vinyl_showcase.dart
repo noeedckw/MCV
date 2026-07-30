@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../providers/explorer_provider.dart';
 import 'genre_accent.dart';
 import 'vinyl_scroll_band.dart';
+import '../../utils/cover_url.dart';
 
 class ExplorerVinylShowcase extends StatefulWidget {
   final GenreAccent genreAccent;
@@ -105,6 +106,49 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
     }
   }
 
+  /// Tente de charger réellement l'image (fetch + decode via precacheImage,
+  /// donc elle finit dans l'ImageCache si ça réussit — VinylScrollBand
+  /// l'affichera donc instantanément, sans refetch). Retry avec backoff
+  /// avant d'abandonner.
+  ///
+  /// IMPORTANT : precacheImage() ne fait PAS échouer son Future en cas
+  /// d'erreur réseau/décodage — elle complète "normalement" et envoie
+  /// l'exception à FlutterError.onError, sauf si on lui passe un callback
+  /// onError explicite. Un simple try/catch autour de l'await ne détecte
+  /// donc rien : il faut piloter l'échec via ce callback.
+  Future<bool> _isImageLoadable(String url, {int maxAttempts = 3}) async {
+    final resolved = resolveCoverUrl(url);
+    if (resolved == null) return false;
+
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      if (!mounted) return false;
+
+      var failed = false;
+      try {
+        await precacheImage(
+          NetworkImage(resolved),
+          context,
+          onError: (exception, stackTrace) {
+            // Callback fiable, contrairement au Future qui se complète
+            // "avec succès" même quand l'image n'a pas pu être chargée.
+            failed = true;
+          },
+        );
+      } catch (_) {
+        // Filet de sécurité pour une exception synchrone éventuelle
+        // (ex: provider mal formé).
+        failed = true;
+      }
+
+      if (!failed) return true;
+
+      if (attempt < maxAttempts - 1) {
+        await Future.delayed(Duration(milliseconds: 400 * (attempt + 1)));
+      }
+    }
+    return false;
+  }
+
   Future<void> _loadShowcase() async {
     final loadId = ++_loadId;
 
@@ -144,13 +188,35 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
         return;
       }
 
-      final splitIndex = covers.length ~/ 2;
+      // Vérifie en parallèle que chaque cover charge vraiment (avec
+      // retry), et ne garde que celles qui passent — les échecs restants
+      // (rate-limit persistant, URL cassée côté Discogs, etc.) sont
+      // simplement exclues de la bande plutôt que d'afficher un carré gris.
+      final validityChecks = await Future.wait(
+        covers.map((url) => _isImageLoadable(url)),
+      );
 
       if (!mounted || loadId != _loadId) return;
 
+      final validCovers = [
+        for (var i = 0; i < covers.length; i++)
+          if (validityChecks[i]) covers[i],
+      ];
+
+      if (validCovers.isEmpty) {
+        setState(() {
+          _isLoading = false;
+          _bandTop = [];
+          _bandBottom = [];
+        });
+        return;
+      }
+
+      final splitIndex = validCovers.length ~/ 2;
+
       setState(() {
-        _bandTop = covers.sublist(0, splitIndex);
-        _bandBottom = covers.sublist(splitIndex);
+        _bandTop = validCovers.sublist(0, splitIndex);
+        _bandBottom = validCovers.sublist(splitIndex);
 
         _isLoading = false;
 
