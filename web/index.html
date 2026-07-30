@@ -27,34 +27,18 @@
   </style>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <body>
   <script>
-    function forceRelayout() {
-      // Force un VRAI recalcul (pas juste un event) : on change
-      // réellement une dimension, puis on la restaure au frame suivant.
-      var vh = window.innerHeight;
-      document.documentElement.style.height = (vh - 1) + 'px';
-      requestAnimationFrame(function () {
-        document.documentElement.style.height = vh + 'px';
-        window.dispatchEvent(new Event('resize'));
-      });
-    }
-
-    window.addEventListener('load', function () {
-      setTimeout(forceRelayout, 300);
-      setTimeout(forceRelayout, 1000);
-    });
-
-    document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'visible') {
-        forceRelayout();
+    document.addEventListener('touchend', function (e) {
+      var active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+        if (e.target !== active && !active.contains(e.target)) {
+          active.blur();
+        }
       }
-    });
-
-    // visualViewport est souvent plus fiable que window pour les PWA iOS
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', forceRelayout);
-    }
+    }, { passive: true });
   </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
 </body>
 </html>
