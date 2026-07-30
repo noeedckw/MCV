@@ -24,16 +24,10 @@
   <link rel="manifest" href="manifest.json">
 
   <style>
-    /* Fond noir dès le premier paint, évite le flash blanc au chargement */
     html, body {
       background-color: #000000;
       height: 100%;
       width: 100%;
-      /* Empêche tout scroll fantôme du document englobant en mode
-         standalone iOS, qui causait un décalage constant entre
-         l'endroit cliqué et l'endroit où le clic était détecté.
-         Flutter gère lui-même son propre scroll interne, donc
-         bloquer le scroll du document HTML ne casse rien côté app. */
       overflow: hidden;
       position: fixed;
     }
@@ -41,12 +35,49 @@
 </head>
 <body>
   <script>
-    // Recale le document à l'origine au chargement, au cas où un
-    // scroll fantôme existerait déjà avant même l'interaction —
-    // filet de sécurité en plus du CSS ci-dessus.
     window.addEventListener('load', function () {
       window.scrollTo(0, 0);
     });
+
+    // FIX PRINCIPAL : en PWA standalone iOS, Flutter calcule mal les
+    // coordonnées de hit-test (clic décalé vers le bas) tant qu'un VRAI
+    // cycle ouverture/fermeture du clavier n'a pas eu lieu au moins une
+    // fois. Un simple `resize` déclenché en JS ne suffit pas car il ne
+    // change aucune vraie valeur de window.innerHeight/visualViewport.
+    //
+    // Ici, on force ce vrai cycle automatiquement au tout premier tap
+    // de l'utilisateur (obligatoire : iOS n'ouvre le clavier via JS que
+    // dans un vrai geste utilisateur, pas au chargement de la page).
+    //
+    // Effet secondaire visible : le clavier système peut flasher
+    // brièvement à l'écran lors de ce tout premier tap.
+    (function () {
+      var warmedUp = false;
+
+      function warmUpViewportMetrics() {
+        if (warmedUp) return;
+        warmedUp = true;
+
+        var hiddenInput = document.createElement('input');
+        hiddenInput.setAttribute('type', 'text');
+        hiddenInput.setAttribute(
+          'style',
+          'position:fixed; top:-1000px; left:-1000px; opacity:0; height:1px; width:1px; pointer-events:none;'
+        );
+        document.body.appendChild(hiddenInput);
+        hiddenInput.focus();
+
+        setTimeout(function () {
+          hiddenInput.blur();
+          document.body.removeChild(hiddenInput);
+        }, 50);
+      }
+
+      document.addEventListener('touchend', warmUpViewportMetrics, {
+        once: true,
+        passive: true,
+      });
+    })();
   </script>
 
   <script src="flutter_bootstrap.js" async></script>
