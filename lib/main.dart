@@ -47,6 +47,7 @@ class _AppRootState extends State<AppRoot> {
   }
 
   Future<void> _checkToken() async {
+    _tokenStorageService.deleteToken();
     final hasToken = await _tokenStorageService.hasToken();
     DiscogsApi? api;
     if (hasToken) {
