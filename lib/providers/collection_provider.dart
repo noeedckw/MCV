@@ -53,8 +53,6 @@ class CollectionProvider extends ChangeNotifier {
       .where((v) => v.isWantlist == (targetView == CollectionView.wantlist))
       .toList();
 
-  List<VinylEntry> get _viewVinyls => _viewVinylsFor(view);
-
   // Même logique de filtre/tri que filteredVinyls, mais pour une vue
   // explicite plutôt que la vue courante -> permet au PageView d'afficher
   // les deux pages (owned + wantlist) en parallèle sans dépendre de
