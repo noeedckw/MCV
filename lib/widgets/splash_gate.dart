@@ -58,6 +58,7 @@ class _SplashGateState extends State<SplashGate>
   bool _entered = false;
   bool _exiting = false;
   bool _showText = false;
+  bool _showChild = false;
 
   late final AnimationController _breatheController;
   late final AnimationController _exitController;
@@ -147,6 +148,15 @@ class _SplashGateState extends State<SplashGate>
         dx: random.nextDouble(),
         dy: random.nextDouble(),
       );
+    });
+
+    // Laisse le tout premier frame du splash (ses propres animations)
+    // se poser tranquillement avant de monter le contenu réel derrière
+    // -> évite la saccade de construction initiale qui compétitionne
+    // avec le début des animations de respiration/fond.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() => _showChild = true);
     });
 
     // Respiration en boucle, tant que l'utilisateur n'a pas tapé.
@@ -364,9 +374,9 @@ class _SplashGateState extends State<SplashGate>
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        if (_showChild)
         // Écran final, en dessous, révélé en fondu à mesure que le
         // splash disparaît.
-        if (_exiting)
           AnimatedBuilder(
             animation: _exitController,
             builder: (context, child) {
@@ -408,11 +418,6 @@ class _SplashGateState extends State<SplashGate>
                     // Glow proportionnel au logo (même ratio qu'avant :
                     // 400 / 140 ≈ 2.85).
                     final glowSize = logoSize * 2.85;
-
-                    // Conversion de la position Y du centre du vinyle
-                    // (en pixels) vers une Alignment (-1..1) utilisable
-                    // dans un Stack en StackFit.expand.
-                    final logoAlignY = (vinylCenterY / height) * 2 - 1 - 0.04;
 
                     return Container(
                       width: double.infinity,
@@ -458,85 +463,80 @@ class _SplashGateState extends State<SplashGate>
                           // Logo, calé exactement sur le centre du rond
                           // central du vinyle (même point que le label
                           // dessiné par _SpinningVinylPainter).
-                          Align(
-                            alignment: Alignment(0, logoAlignY),
-                            child: RepaintBoundary(
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  // Glow : isolé dans son propre
-                                  // AnimatedBuilder, n'écoute QUE
-                                  // _exitController (quasi toujours à
-                                  // l'arrêt), donc ne force jamais de
-                                  // rebuild pendant la respiration.
-                                  AnimatedBuilder(
-                                    animation: _exitController,
-                                    builder: (context, _) {
-                                      if (!_exiting) {
-                                        return const SizedBox.shrink();
-                                      }
-                                      return Opacity(
-                                        opacity: _glowOpacity.value,
-                                        child: Container(
-                                          width: glowSize,
-                                          height: glowSize,
-                                          decoration: const BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            gradient: RadialGradient(
-                                              colors: [
-                                                Colors.white,
-                                                Colors.transparent,
-                                              ],
+                          Positioned(
+                            left: width / 2 - glowSize / 2,
+                            top: vinylCenterY - glowSize / 2,
+                            child: SizedBox(
+                              width: glowSize,
+                              height: glowSize,
+                              child: RepaintBoundary(
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    AnimatedBuilder(
+                                      animation: _exitController,
+                                      builder: (context, _) {
+                                        if (!_exiting) {
+                                          return const SizedBox.shrink();
+                                        }
+                                        return Opacity(
+                                          opacity: _glowOpacity.value,
+                                          child: Container(
+                                            width: glowSize,
+                                            height: glowSize,
+                                            decoration: const BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              gradient: RadialGradient(
+                                                colors: [
+                                                  Colors.white,
+                                                  Colors.transparent,
+                                                ],
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      );
-                                    },
-                                  ),
+                                        );
+                                      },
+                                    ),
 
-                                  // Logo seul : construit UNE SEULE FOIS
-                                  // (passé en `child`), seule la
-                                  // Transform/Opacity autour est
-                                  // recalculée à chaque frame -> plus de
-                                  // relayout, plus de saccade.
-                                  AnimatedBuilder(
-                                    animation: Listenable.merge([
-                                      _breatheController,
-                                      _exitController,
-                                    ]),
-                                    builder: (context, child) {
-                                      final scale = _exiting
-                                          ? _pressScale.value *
-                                              _zoomScale.value
-                                          : _breatheScale.value;
-                                      final opacity =
-                                          _exiting ? _exitOpacity.value : 1.0;
+                                    AnimatedBuilder(
+                                      animation: Listenable.merge([
+                                        _breatheController,
+                                        _exitController,
+                                      ]),
+                                      builder: (context, child) {
+                                        final scale = _exiting
+                                            ? _pressScale.value * _zoomScale.value
+                                            : _breatheScale.value;
+                                        final opacity = _exiting ? _exitOpacity.value : 1.0;
 
-                                      return Opacity(
-                                        opacity: opacity,
-                                        child: Transform.scale(
-                                          scale: scale,
-                                          filterQuality: FilterQuality.medium,
-                                          child: child,
-                                        ),
-                                      );
-                                    },
-                                    child: AppLogo(size: logoSize),
-                                  ),
-                                ],
+                                        return Opacity(
+                                          opacity: opacity,
+                                          child: Transform.scale(
+                                            scale: scale,
+                                            filterQuality: FilterQuality.medium,
+                                            child: child,
+                                          ),
+                                        );
+                                      },
+                                      child: AppLogo(size: logoSize),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
+                           
 
                           // Texte, positionné indépendamment du logo :
                           // toujours au même point de départ (centre du
                           // vinyle), puis décalé vers le bas d'une
                           // distance relative à logoSize, pour rester
                           // cohérent quelle que soit la taille du logo.
-                          Align(
-                            alignment: Alignment(0, logoAlignY),
-                            child: Transform.translate(
-                              offset: Offset(0, logoSize * 1.1),
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            top: vinylCenterY + logoSize * 0.8,
+                            child: Center(
                               child: RepaintBoundary(
                                 child: AnimatedBuilder(
                                   animation: _textController,
