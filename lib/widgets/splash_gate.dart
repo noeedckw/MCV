@@ -36,6 +36,12 @@ class _BlurDot {
   });
 }
 
+/// Couleur de fond de référence du splash. Utilisée à la fois pour le
+/// fond plein (Material) et pour le dégradé de raccord en haut d'écran
+/// (voir _buildStatusBarFade) — garder une seule constante évite tout
+/// désaccord de teinte entre les deux si elle change un jour.
+const Color _splashBackgroundColor = Color(0xFF0A0910);
+
 /// Écran affiché au lancement de l'app (utile surtout en PWA standalone
 /// iOS). L'utilisateur tape sur le logo pour "entrer" : ce tap déclenche
 /// une animation de zoom + fade, ET sert de façon invisible à corriger un
@@ -370,6 +376,64 @@ class _SplashGateState extends State<SplashGate>
     }
   }
 
+  /// Dégradé noir statique tout en haut de l'écran, dont le rôle est
+  /// purement cosmétique : faire un raccord visuel avec la status bar
+  /// native iOS (toujours noire/opaque au-dessus du splash en mode PWA
+  /// standalone), pour qu'on ne voie jamais de bande nette entre les
+  /// deux. Placé au-dessus de tout le reste (vinyle, style de fond,
+  /// logo, texte), fixe pendant toute la séquence (respiration comme
+  /// sortie), et transparent aux taps pour ne jamais gêner le
+  /// "tap to enter".
+  Widget _buildStatusBarFade(BuildContext context) {
+    final topInset = MediaQuery.of(context).padding.top;
+    // Zone 100% opaque qui recouvre exactement la safe-area (sous la
+    // status bar elle-même) : garantit un raccord parfait, sans aucune
+    // transparence résiduelle qui laisserait deviner le vinyle en
+    // dessous. Le fondu ne commence qu'après cette bande.
+    final solidHeight = topInset;
+    // Fondu long et progressif après la zone opaque, avec plusieurs
+    // paliers plutôt qu'un simple dégradé linéaire à 2 points — un
+    // linéaire pur "s'éclaircit" trop vite à l'œil (perception non
+    // linéaire de la luminosité), plusieurs stops rapprochés en haut
+    // donnent une transition beaucoup plus naturelle.
+    const fadeLength = 140.0;
+    final totalHeight = solidHeight + fadeLength;
+    final solidStop = totalHeight == 0 ? 0.0 : solidHeight / totalHeight;
+
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      height: totalHeight,
+      child: IgnorePointer(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                _splashBackgroundColor, // 100% opaque sous la status bar
+                _splashBackgroundColor,
+                _splashBackgroundColor.withValues(alpha: 0.85),
+                _splashBackgroundColor.withValues(alpha: 0.55),
+                _splashBackgroundColor.withValues(alpha: 0.25),
+                _splashBackgroundColor.withValues(alpha: 0.0),
+              ],
+              stops: [
+                0.0,
+                solidStop,
+                solidStop + (1 - solidStop) * 0.18,
+                solidStop + (1 - solidStop) * 0.40,
+                solidStop + (1 - solidStop) * 0.68,
+                1.0,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -390,7 +454,7 @@ class _SplashGateState extends State<SplashGate>
 
         if (!_entered)
           Material(
-            color: const Color(0xFF0A0910),
+            color: _splashBackgroundColor,
             child: SizedBox.expand(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
@@ -422,7 +486,7 @@ class _SplashGateState extends State<SplashGate>
                     return Container(
                       width: double.infinity,
                       height: double.infinity,
-                      color: const Color(0xFF0A0910),
+                      color: _splashBackgroundColor,
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
@@ -455,7 +519,7 @@ class _SplashGateState extends State<SplashGate>
                           // une lecture cohérente du logo peu importe le
                           // style tiré.
                           Container(
-                            color: const Color(0xFF0A0910).withValues(
+                            color: _splashBackgroundColor.withValues(
                               alpha: 0.45,
                             ),
                           ),
@@ -525,7 +589,6 @@ class _SplashGateState extends State<SplashGate>
                               ),
                             ),
                           ),
-                           
 
                           // Texte, positionné indépendamment du logo :
                           // toujours au même point de départ (centre du
@@ -589,6 +652,11 @@ class _SplashGateState extends State<SplashGate>
                               ),
                             ),
                           ),
+
+                          // Fondu noir en haut d'écran, pour matcher la
+                          // status bar native. Toujours en dernier =
+                          // toujours au-dessus de tout le reste.
+                          _buildStatusBarFade(context),
                         ],
                       ),
                     );
