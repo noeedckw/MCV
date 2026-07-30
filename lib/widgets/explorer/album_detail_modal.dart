@@ -67,6 +67,7 @@ Future<void> showAlbumDetailModal(
 
   return showGeneralDialog(
     context: context,
+    useRootNavigator: false,
     barrierDismissible: true,
     barrierLabel: 'Close',
     barrierColor: Colors.transparent,

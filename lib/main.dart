@@ -41,11 +41,21 @@ class _AppRootState extends State<AppRoot> {
   final TokenStorageService _tokenStorageService = SecureTokenStorageService();
 
   bool _isLoading = true;
-  DiscogsApi? _discogsApi;
+  DiscogsApi? _discogsApi; // sert juste à choisir quel écran afficher
+
+  // Créés une seule fois, pour toute la durée de vie de l'app.
+  late final CollectionProvider _collectionProvider;
+  late final ExplorerProvider _explorerProvider;
+  late final ConnectivityProvider _connectivityProvider;
+  late final NavBarVisibilityProvider _navBarVisibilityProvider;
 
   @override
   void initState() {
     super.initState();
+    _collectionProvider = CollectionProvider(widget.storage);
+    _explorerProvider = ExplorerProvider(widget.storage, _collectionProvider);
+    _connectivityProvider = ConnectivityProvider();
+    _navBarVisibilityProvider = NavBarVisibilityProvider();
     _checkToken();
   }
 
@@ -56,6 +66,11 @@ class _AppRootState extends State<AppRoot> {
       api = await DiscogsApi.fromStorage(_tokenStorageService);
     }
     if (!mounted) return;
+
+    if (api != null) {
+      _explorerProvider.configure(api);
+    }
+
     setState(() {
       _discogsApi = api;
       _isLoading = false;
@@ -64,9 +79,7 @@ class _AppRootState extends State<AppRoot> {
 
   Widget _buildContent() {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_discogsApi == null) {
@@ -75,46 +88,34 @@ class _AppRootState extends State<AppRoot> {
         onConfigured: () async {
           final api = await DiscogsApi.fromStorage(_tokenStorageService);
           if (!mounted) return;
+          _explorerProvider.configure(api);
           setState(() => _discogsApi = api);
         },
       );
     }
 
-    final api = _discogsApi!;
-
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(
-          create: (_) => CollectionProvider(widget.storage),
-        ),
-        ChangeNotifierProxyProvider<CollectionProvider, ExplorerProvider>(
-          create: (ctx) => ExplorerProvider(
-            api,
-            widget.storage,
-            ctx.read<CollectionProvider>(),
-          ),
-          update: (ctx, collectionProvider, previous) =>
-              previous ??
-              ExplorerProvider(api, widget.storage, collectionProvider),
-        ),
-        ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
-        ChangeNotifierProvider(create: (_) => NavBarVisibilityProvider()),
-      ],
-      child: const MainNavigationScreen(),
-    );
+    return const MainNavigationScreen();
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'MCV',
-      theme: ThemeData(
-        colorSchemeSeed: const Color.fromARGB(255, 24, 23, 25),
-        brightness: Brightness.dark,
-        useMaterial3: true,
-      ),
-      home: SplashGate(
-        child: Builder(builder: (context) => _buildContent()),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: _collectionProvider),
+        ChangeNotifierProvider.value(value: _explorerProvider),
+        ChangeNotifierProvider.value(value: _connectivityProvider),
+        ChangeNotifierProvider.value(value: _navBarVisibilityProvider),
+      ],
+      child: MaterialApp(
+        title: 'MCV',
+        theme: ThemeData(
+          colorSchemeSeed: const Color.fromARGB(255, 24, 23, 25),
+          brightness: Brightness.dark,
+          useMaterial3: true,
+        ),
+        home: SplashGate(
+          child: Builder(builder: (context) => _buildContent()),
+        ),
       ),
     );
   }

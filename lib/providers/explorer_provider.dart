@@ -8,11 +8,26 @@ import '../utils/discogs_notes.dart';
 import '../utils/cover_url.dart';
 
 class ExplorerProvider extends ChangeNotifier {
-  final DiscogsApi discogsApi;
+  DiscogsApi? _discogsApi;
   final LocalStorageService storage;
   final CollectionProvider collectionProvider;
 
-  ExplorerProvider(this.discogsApi, this.storage, this.collectionProvider);
+  ExplorerProvider(this.storage, this.collectionProvider);
+
+  /// Appelé une fois l'utilisateur authentifié auprès de Discogs.
+  /// Tant que ce n'est pas appelé, tout accès à `discogsApi` lève —
+  /// mais _buildContent() ne construit MainNavigationScreen (donc
+  /// n'utilise jamais ce provider) qu'une fois configure() déjà fait.
+  void configure(DiscogsApi api) {
+    _discogsApi = api;
+    notifyListeners();
+  }
+
+  DiscogsApi get discogsApi {
+    final api = _discogsApi;
+    assert(api != null, 'ExplorerProvider.configure() doit être appelé avant usage');
+    return api!;
+  }
 
   List<dynamic> results = [];
   bool isLoading = false;
