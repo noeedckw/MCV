@@ -1,6 +1,6 @@
 {
-    "name": "My Collection of Vinyles",
-    "short_name": "My Collection of Vinyles",
+    "name": "My Collection of Vinyle",
+    "short_name": "MCV",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#000000",
