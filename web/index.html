@@ -29,20 +29,32 @@
 <body>
   <script src="flutter_bootstrap.js" async></script>
   <script>
-    function forceResize() {
-      window.dispatchEvent(new Event('resize'));
+    function forceRelayout() {
+      // Force un VRAI recalcul (pas juste un event) : on change
+      // réellement une dimension, puis on la restaure au frame suivant.
+      var vh = window.innerHeight;
+      document.documentElement.style.height = (vh - 1) + 'px';
+      requestAnimationFrame(function () {
+        document.documentElement.style.height = vh + 'px';
+        window.dispatchEvent(new Event('resize'));
+      });
     }
 
     window.addEventListener('load', function () {
-      setTimeout(forceResize, 300);
-      setTimeout(forceResize, 1000); // filet si Flutter met plus de temps à se peindre
+      setTimeout(forceRelayout, 300);
+      setTimeout(forceRelayout, 1000);
     });
 
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'visible') {
-        forceResize();
+        forceRelayout();
       }
     });
+
+    // visualViewport est souvent plus fiable que window pour les PWA iOS
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', forceRelayout);
+    }
   </script>
 </body>
 </html>

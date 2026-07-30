@@ -126,10 +126,12 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
       if (!mounted || loadId != _loadId) return;
 
       final covers = <String>{
-        for (final r in results)
-          if (r is Map && (r['cover_image'] as String?)?.isNotEmpty == true)
-            r['cover_image'] as String,
-      }.toList()..shuffle(Random());
+      for (final r in results)
+        if (r is Map &&
+            (r['cover_image'] as String?)?.isNotEmpty == true &&
+            !(r['cover_image'] as String).toLowerCase().contains('spacer.gif'))
+          r['cover_image'] as String,
+    }.toList()..shuffle(Random());
 
       if (covers.isEmpty) {
         if (!mounted || loadId != _loadId) return;
