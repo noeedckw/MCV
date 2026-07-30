@@ -385,20 +385,17 @@ class _SplashGateState extends State<SplashGate>
   /// sortie), et transparent aux taps pour ne jamais gêner le
   /// "tap to enter".
   Widget _buildStatusBarFade(BuildContext context) {
+    // On NE se base plus uniquement sur MediaQuery.padding.top : sur
+    // Flutter web/PWA iOS, cette valeur peut remonter à 0 selon le
+    // moment du build, ce qui rendait la zone opaque quasi invisible.
+    // On prend le max entre la vraie safe-area (si dispo) et un
+    // plancher fixe, pour garantir un résultat visible sur tous les
+    // appareils/contextes.
     final topInset = MediaQuery.of(context).padding.top;
-    // Zone 100% opaque qui recouvre exactement la safe-area (sous la
-    // status bar elle-même) : garantit un raccord parfait, sans aucune
-    // transparence résiduelle qui laisserait deviner le vinyle en
-    // dessous. Le fondu ne commence qu'après cette bande.
-    final solidHeight = topInset;
-    // Fondu long et progressif après la zone opaque, avec plusieurs
-    // paliers plutôt qu'un simple dégradé linéaire à 2 points — un
-    // linéaire pur "s'éclaircit" trop vite à l'œil (perception non
-    // linéaire de la luminosité), plusieurs stops rapprochés en haut
-    // donnent une transition beaucoup plus naturelle.
-    const fadeLength = 140.0;
+    final solidHeight = math.max(topInset, 60.0);
+    const fadeLength = 160.0;
     final totalHeight = solidHeight + fadeLength;
-    final solidStop = totalHeight == 0 ? 0.0 : solidHeight / totalHeight;
+    final solidStop = solidHeight / totalHeight;
 
     return Positioned(
       top: 0,
@@ -412,19 +409,21 @@ class _SplashGateState extends State<SplashGate>
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                _splashBackgroundColor, // 100% opaque sous la status bar
+                _splashBackgroundColor, // 100% opaque, bande large
                 _splashBackgroundColor,
-                _splashBackgroundColor.withValues(alpha: 0.85),
-                _splashBackgroundColor.withValues(alpha: 0.55),
-                _splashBackgroundColor.withValues(alpha: 0.25),
+                _splashBackgroundColor.withValues(alpha: 0.95),
+                _splashBackgroundColor.withValues(alpha: 0.75),
+                _splashBackgroundColor.withValues(alpha: 0.45),
+                _splashBackgroundColor.withValues(alpha: 0.15),
                 _splashBackgroundColor.withValues(alpha: 0.0),
               ],
               stops: [
                 0.0,
                 solidStop,
-                solidStop + (1 - solidStop) * 0.18,
-                solidStop + (1 - solidStop) * 0.40,
-                solidStop + (1 - solidStop) * 0.68,
+                solidStop + (1 - solidStop) * 0.15,
+                solidStop + (1 - solidStop) * 0.35,
+                solidStop + (1 - solidStop) * 0.58,
+                solidStop + (1 - solidStop) * 0.80,
                 1.0,
               ],
             ),
