@@ -9,14 +9,6 @@ import 'collection_grid.dart';
 import 'collection_search_and_sort_row.dart';
 import 'collection_view_switcher.dart';
 
-/// Top-level orchestrator for the Collection tab.
-///
-/// The header (view switcher + search/sort row) floats above the grid —
-/// no full-width glass strip behind it. Each control (switcher, search
-/// bar, sort button) carries its own localized frosted-glass background
-/// clipped to its own pill shape, so only those shapes blur what's behind
-/// them instead of one big blurred band across the whole top of the
-/// screen.
 class CollectionContainer extends StatefulWidget {
   final ValueChanged<VinylEntry>? onTapEntry;
 
@@ -28,14 +20,22 @@ class CollectionContainer extends StatefulWidget {
 
 class _CollectionContainerState extends State<CollectionContainer> {
   final _searchFocusNode = FocusNode();
+  late final PageController _pageController;
 
   double _headerHeight = 132;
   static const double _headerGap = 12;
+
+  // Piste la dernière vue connue pour ne réagir qu'aux VRAIS changements
+  // de `provider.view` (ex: tap sur le switcher), et ignorer ceux qu'on
+  // vient de déclencher nous-même via le swipe (onPageChanged).
+  CollectionView? _lastView;
+  bool _viewChangeFromSwipe = false;
 
   @override
   void initState() {
     super.initState();
     _searchFocusNode.addListener(_onFocusChange);
+    _pageController = PageController();
   }
 
   void _onFocusChange() {
@@ -46,11 +46,29 @@ class _CollectionContainerState extends State<CollectionContainer> {
   void dispose() {
     _searchFocusNode.removeListener(_onFocusChange);
     _searchFocusNode.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
-  CollectionEmptyType _resolveEmptyType(CollectionProvider provider) {
-    final isWantlist = provider.view == CollectionView.wantlist;
+  static int _indexForView(CollectionView view) =>
+      view == CollectionView.owned ? 0 : 1;
+
+  static CollectionView _viewForIndex(int index) =>
+      index == 0 ? CollectionView.owned : CollectionView.wantlist;
+
+  void _onPageChanged(int index, CollectionProvider provider) {
+    final newView = _viewForIndex(index);
+    if (newView == provider.view) return;
+
+    _viewChangeFromSwipe = true;
+    provider.setView(newView);
+  }
+
+  CollectionEmptyType _resolveEmptyType(
+    CollectionProvider provider,
+    CollectionView view,
+  ) {
+    final isWantlist = view == CollectionView.wantlist;
     final isSearching = provider.searchQuery.isNotEmpty;
 
     if (isSearching) return CollectionEmptyType.noSearchResults;
@@ -59,34 +77,59 @@ class _CollectionContainerState extends State<CollectionContainer> {
         : CollectionEmptyType.emptyCollection;
   }
 
+  Widget _buildPage(CollectionView view, CollectionProvider provider) {
+    final vinyls = provider.filteredVinylsFor(view);
+
+    return vinyls.isEmpty
+        ? Padding(
+            padding: EdgeInsets.only(top: _headerHeight + _headerGap),
+            child: CollectionEmptyState(
+              type: _resolveEmptyType(provider, view),
+              focusNode: _searchFocusNode,
+            ),
+          )
+        : CollectionGrid(
+            entries: vinyls,
+            topPadding: _headerHeight + _headerGap,
+            onTapEntry: widget.onTapEntry ?? (_) {},
+          );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CollectionProvider>();
-    final vinyls = provider.filteredVinyls;
+
+    if (_lastView != provider.view) {
+      if (_viewChangeFromSwipe) {
+        _viewChangeFromSwipe = false;
+      } else {
+        final targetIndex = _indexForView(provider.view);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_pageController.hasClients) {
+            _pageController.animateToPage(
+              targetIndex,
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOut,
+            );
+          }
+        });
+      }
+      _lastView = provider.view;
+    }
 
     return Stack(
       children: [
         Positioned.fill(
-          child: vinyls.isEmpty
-              ? Padding(
-                  padding: EdgeInsets.only(top: _headerHeight + _headerGap),
-                  child: CollectionEmptyState(
-                    type: _resolveEmptyType(provider),
-                    focusNode: _searchFocusNode,
-                  ),
-                )
-              : CollectionGrid(
-                  entries: vinyls,
-                  topPadding: _headerHeight + _headerGap,
-                  onTapEntry: widget.onTapEntry ?? (_) {},
-                ),
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: (index) => _onPageChanged(index, provider),
+            children: [
+              _buildPage(CollectionView.owned, provider),
+              _buildPage(CollectionView.wantlist, provider),
+            ],
+          ),
         ),
 
-        // Voile qui absorbe le tap pour fermer le clavier, sans laisser
-        // le tap atteindre une cover en dessous. Écoute directement le
-        // FocusNode via AnimatedBuilder -> ne rebuild que ce voile,
-        // jamais tout le container, donc aucun conflit avec les rebuilds
-        // du CollectionProvider pendant la frappe.
         AnimatedBuilder(
           animation: _searchFocusNode,
           builder: (context, _) {

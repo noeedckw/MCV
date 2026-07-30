@@ -29,9 +29,7 @@ class CollectionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<VinylEntry> get _viewVinyls => vinyls
-      .where((v) => v.isWantlist == (view == CollectionView.wantlist))
-      .toList();
+  
 
   // Best-effort release date extraction for sorting: prefers a full parsed
   // date (when releaseDate holds something like "2011-05-09"), falls back
@@ -51,8 +49,18 @@ class CollectionProvider extends ChangeNotifier {
     return null;
   }
 
-  List<VinylEntry> get filteredVinyls {
-    var list = _viewVinyls;
+  List<VinylEntry> _viewVinylsFor(CollectionView targetView) => vinyls
+      .where((v) => v.isWantlist == (targetView == CollectionView.wantlist))
+      .toList();
+
+  List<VinylEntry> get _viewVinyls => _viewVinylsFor(view);
+
+  // Même logique de filtre/tri que filteredVinyls, mais pour une vue
+  // explicite plutôt que la vue courante -> permet au PageView d'afficher
+  // les deux pages (owned + wantlist) en parallèle sans dépendre de
+  // `view`, tout en gardant un seul endroit qui définit le tri.
+  List<VinylEntry> filteredVinylsFor(CollectionView targetView) {
+    var list = _viewVinylsFor(targetView);
 
     if (searchQuery.isNotEmpty) {
       final q = searchQuery.toLowerCase();
@@ -83,7 +91,7 @@ class CollectionProvider extends ChangeNotifier {
           if (da == null && db == null) {
             cmp = 0;
           } else if (da == null) {
-            cmp = 1; // unknown always last
+            cmp = 1;
           } else if (db == null) {
             cmp = -1;
           } else {
@@ -91,8 +99,6 @@ class CollectionProvider extends ChangeNotifier {
           }
           break;
       }
-      // Unknown release dates stay pinned last even when the list is
-      // flipped to ascending -> don't invert that particular comparison.
       if (sort == CollectionSort.releaseDate &&
           (_releaseDateOf(a) == null || _releaseDateOf(b) == null)) {
         return cmp;
@@ -102,6 +108,8 @@ class CollectionProvider extends ChangeNotifier {
 
     return list;
   }
+
+  List<VinylEntry> get filteredVinyls => filteredVinylsFor(view);
 
   int get ownedCount => vinyls.where((v) => !v.isWantlist).length;
   int get wantlistCount => vinyls.where((v) => v.isWantlist).length;
