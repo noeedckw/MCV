@@ -6,30 +6,77 @@ enum CollectionEmptyType { emptyCollection, emptyWantlist, noSearchResults }
 
 /// Shown when the current view (collection or wantlist) has no items yet,
 /// or when a search inside the current view returns nothing.
-class CollectionEmptyState extends StatelessWidget {
-  CollectionEmptyState({
+class CollectionEmptyState extends StatefulWidget {
+  const CollectionEmptyState({
     super.key,
     required this.type,
-    required this.focusNode, // gardé si tu t'en sers ailleurs, plus utilisé pour la taille
+    required this.focusNode,
   });
 
   final CollectionEmptyType type;
   final FocusNode focusNode;
 
+  @override
+  State<CollectionEmptyState> createState() => _CollectionEmptyStateState();
+}
+
+class _CollectionEmptyStateState extends State<CollectionEmptyState> {
   static final _random = Random();
+
+  String? _selectedImage;
+  CollectionEmptyType? _lastType;
 
   double _lerp(double a, double b, double t) => a + (b - a) * t;
 
   @override
-  Widget build(BuildContext context) {
+  void initState() {
+    super.initState();
+
+    // Choisit l'image une seule fois à la création du widget.
+    _updateImage(widget.type);
+  }
+
+  @override
+  void didUpdateWidget(covariant CollectionEmptyState oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // On ne change l'image que si le TYPE d'écran change réellement.
+    //
+    // Exemple :
+    // noSearchResults -> noSearchResults
+    // => même image
+    //
+    // noSearchResults -> emptyWantlist
+    // => nouvelle image
+    if (widget.type != _lastType) {
+      _updateImage(widget.type);
+    }
+  }
+
+  void _updateImage(CollectionEmptyType type) {
     final data = _emptyData(type);
-    final image = data.images[_random.nextInt(data.images.length)];
+
+    if (data.images.isEmpty) {
+      _selectedImage = null;
+      _lastType = type;
+      return;
+    }
+
+    _selectedImage = data.images[_random.nextInt(data.images.length)];
+    _lastType = type;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = _emptyData(widget.type);
+    final image = _selectedImage ?? data.images.first;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableHeight = constraints.maxHeight;
 
-        final scale = ((availableHeight - 250) / (500 - 250)).clamp(0.0, 1.0);
+        final scale =
+            ((availableHeight - 250) / (500 - 250)).clamp(0.0, 1.0);
 
         final imageWidth = _lerp(280, 650, scale);
         final imageHeight = _lerp(110, 300, scale);
@@ -58,7 +105,10 @@ class CollectionEmptyState extends StatelessWidget {
                     curve: Curves.easeInOutCubic,
                     width: imageWidth,
                     height: imageHeight,
-                    child: Image.asset(image, fit: BoxFit.contain),
+                    child: Image.asset(
+                      image,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                   SizedBox(height: spacing1),
                   AnimatedDefaultTextStyle(
@@ -68,7 +118,10 @@ class CollectionEmptyState extends StatelessWidget {
                       fontSize: titleSize,
                       fontWeight: FontWeight.w700,
                     ),
-                    child: Text(data.title, textAlign: TextAlign.center),
+                    child: Text(
+                      data.title,
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                   SizedBox(height: spacing2),
                   SizedBox(
@@ -80,7 +133,10 @@ class CollectionEmptyState extends StatelessWidget {
                         fontSize: subtitleSize,
                         height: 1.55,
                       ),
-                      child: Text(data.subtitle, textAlign: TextAlign.center),
+                      child: Text(
+                        data.subtitle,
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
                 ],
@@ -98,14 +154,20 @@ class CollectionEmptyState extends StatelessWidget {
         return const _CollectionEmptyData(
           title: "No Records Yet",
           subtitle: "Start collecting by adding your first vinyl.",
-          images: ["assets/images/empty_collection_vinyl.png"],
+          images: [
+            "assets/images/empty_collection_vinyl.png",
+          ],
         );
+
       case CollectionEmptyType.emptyWantlist:
         return const _CollectionEmptyData(
           title: "Your Wantlist Is Empty",
           subtitle: "Save albums you'd like to own to see them here.",
-          images: ["assets/images/empty_wantlist_vinyl.png"],
+          images: [
+            "assets/images/empty_wantlist_vinyl.png",
+          ],
         );
+
       case CollectionEmptyType.noSearchResults:
         return const _CollectionEmptyData(
           title: "No Results Found",
