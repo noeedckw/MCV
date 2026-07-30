@@ -376,7 +376,7 @@ class _SplashGateState extends State<SplashGate>
     }
   }
 
-  /// Dégradé noir statique tout en haut de l'écran, dont le rôle est
+  /// Fondu noir statique tout en haut de l'écran, dont le rôle est
   /// purement cosmétique : faire un raccord visuel avec la status bar
   /// native iOS (toujours noire/opaque au-dessus du splash en mode PWA
   /// standalone), pour qu'on ne voie jamais de bande nette entre les
@@ -384,6 +384,16 @@ class _SplashGateState extends State<SplashGate>
   /// logo, texte), fixe pendant toute la séquence (respiration comme
   /// sortie), et transparent aux taps pour ne jamais gêner le
   /// "tap to enter".
+  ///
+  /// IMPORTANT : implémenté avec un empilement de bandes pleines
+  /// (Container + alpha), PAS avec un LinearGradient/shader. Un
+  /// gradient à beaucoup de stops rapprochés s'affiche très bien sur
+  /// desktop (Chrome dev, Chrome/Edge sur PC) mais peut ne pas
+  /// s'afficher du tout sur WebKit iOS (Safari ET "Chrome iOS", qui
+  /// utilise le même moteur WebKit sur iOS par contrainte Apple) —
+  /// bug de rendu shader propre au GPU mobile. Un simple alpha
+  /// blending de rectangles pleins n'a pas ce problème, il est
+  /// supporté nativement partout.
   Widget _buildStatusBarFade(BuildContext context) {
     // On NE se base plus uniquement sur MediaQuery.padding.top : sur
     // Flutter web/PWA iOS, cette valeur peut remonter à 0 selon le
@@ -393,47 +403,49 @@ class _SplashGateState extends State<SplashGate>
     // appareils/contextes.
     final topInset = MediaQuery.of(context).padding.top;
     final solidHeight = math.max(topInset, 40.0);
-    // Fondu volontairement long : sur Safari/Chrome iOS un fondu court
-    // se perçoit comme un bloc noir qui s'arrête net. Une longueur
-    // généreuse + une courbe (et non une ligne droite ni des paliers
-    // trop espacés) donne un vrai dégradé progressif, sans marche ni
-    // coupure visible.
+    // Fondu volontairement long, réparti en bandes fines : plus il y a
+    // de bandes, plus la transition paraît lisse à l'œil (comme un
+    // dithering d'opacité), tout en restant de simples rectangles
+    // pleins sans aucun shader.
     const fadeLength = 260.0;
-    final totalHeight = solidHeight + fadeLength;
-    final solidStop = solidHeight / totalHeight;
+    const bandCount = 40;
+    final bandHeight = fadeLength / bandCount;
 
-    // Génère de nombreux paliers rapprochés en suivant une courbe
-    // easeOut (opacité qui décroît vite au début, puis très
-    // doucement) : c'est ce qui donne l'impression d'un fondu long et
-    // naturel plutôt que d'un dégradé linéaire "cassant".
-    const stopCount = 24;
-    final colors = <Color>[_splashBackgroundColor, _splashBackgroundColor];
-    final stops = <double>[0.0, solidStop];
-
-    for (int i = 1; i <= stopCount; i++) {
-      final t = i / stopCount; // 0..1 le long du fondu
+    final bands = <Widget>[];
+    for (int i = 0; i < bandCount; i++) {
+      final t = i / bandCount; // 0..1 le long du fondu
+      // Courbe easeOut : décroissance rapide au début, puis douce —
+      // évite l'effet "bloc qui coupe net".
       final eased = 1 - math.pow(1 - t, 2.4).toDouble();
       final opacity = (1 - eased).clamp(0.0, 1.0);
-      colors.add(_splashBackgroundColor.withValues(alpha: opacity));
-      stops.add(solidStop + (1 - solidStop) * t);
-    }
 
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      height: totalHeight,
-      child: IgnorePointer(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: colors,
-              stops: stops,
-            ),
+      bands.add(
+        Positioned(
+          top: solidHeight + i * bandHeight,
+          left: 0,
+          right: 0,
+          height: bandHeight + 0.5, // léger overlap anti-liseré
+          child: ColoredBox(
+            color: _splashBackgroundColor.withValues(alpha: opacity),
           ),
         ),
+      );
+    }
+
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          // Bande 100% opaque, garantie visible même si topInset
+          // remonte à 0 dans certains contextes.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: solidHeight,
+            child: ColoredBox(color: _splashBackgroundColor),
+          ),
+          ...bands,
+        ],
       ),
     );
   }
