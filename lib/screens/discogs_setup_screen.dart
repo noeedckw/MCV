@@ -292,66 +292,72 @@ Widget build(BuildContext context) {
                 // NOUVEAU : titre + sous-titre + carrousel masqués (fondu)
                 // pendant que le clavier est ouvert.
                 Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 180),
-                    child: keyboardVisible
-                        ? const SizedBox.shrink(key: ValueKey('empty'))
-                        : LayoutBuilder(
-                            key: const ValueKey('carousel'),
-                            builder: (context, constraints) {
-                              return SingleChildScrollView(
-                                padding: const EdgeInsets.only(top: 16, bottom: 12),
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    minHeight: constraints.maxHeight,
-                                  ),
-                                  child: Align(
-                                    alignment: const Alignment(0, -0.3),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                                          child: Text(
-                                            _s(
-                                              'Connect your Discogs account',
-                                              'Connecter votre compte Discogs',
-                                            ),
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              color: Colors.white.withValues(alpha: 0.95),
-                                              fontSize: 21,
-                                              fontWeight: FontWeight.w800,
-                                              letterSpacing: -.4,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                                          child: Text(
-                                            _s(
-                                              "Follow the 4 steps below to get started in just a few minutes.",
-                                              "Suivez les 4 étapes ci-dessous pour commencer en quelques minutes.",
-                                            ),
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              color: Colors.white.withValues(alpha: 0.60),
-                                              fontSize: 13.5,
-                                              height: 1.35,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 28),
-                                        OnboardingCarousel(steps: _steps),
-                                      ],
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.only(top: 16, bottom: 12),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: Align(
+                            alignment: const Alignment(0, -0.3),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                                  child: Text(
+                                    _s(
+                                      'Connect your Discogs account',
+                                      'Connecter votre compte Discogs',
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.95),
+                                      fontSize: 21,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -.4,
                                     ),
                                   ),
                                 ),
-                              );
-                            },
+                                const SizedBox(height: 8),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                                  child: Text(
+                                    _s(
+                                      "Follow the 4 steps below to get started in just a few minutes.",
+                                      "Suivez les 4 étapes ci-dessous pour commencer en quelques minutes.",
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.60),
+                                      fontSize: 13.5,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 28),
+                                // Seul le carrousel se masque quand le
+                                // clavier est ouvert — le titre et le
+                                // sous-titre au-dessus restent visibles
+                                // en permanence.
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 180),
+                                  child: keyboardVisible
+                                      ? const SizedBox.shrink(key: ValueKey('empty'))
+                                      : OnboardingCarousel(
+                                          key: const ValueKey('carousel'),
+                                          steps: _steps,
+                                        ),
+                                ),
+                              ],
+                            ),
                           ),
+                        ),
+                      );
+                    },
                   ),
                 ),
 

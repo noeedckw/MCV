@@ -12,8 +12,16 @@ import 'keyboard_warmup_stub.dart'
 // (natif iOS/Android/desktop) — import conditionnel au niveau fichier,
 // donc pas d'erreur de compilation en dehors du web.
 
+/// Style de fond du splash. Un seul est tiré au hasard à chaque
+/// lancement de l'app, comme les taches de couleur l'étaient déjà —
+/// l'idée est juste étendue à plusieurs ambiances visuelles possibles.
+/// Le disque vinyle qui tourne (_SpinningVinylPainter) est lui TOUJOURS
+/// affiché, en dessous de ce style, quel que soit le tirage.
+enum _SplashStyle { blurDots, vinylGroove, concentricWaves, auroraGradient }
+
 /// Une tache de couleur floue du fond, position/couleur/taille générées
-/// aléatoirement à chaque lancement de l'app.
+/// aléatoirement à chaque lancement de l'app. Utilisée uniquement quand
+/// le style tiré est [_SplashStyle.blurDots].
 class _BlurDot {
   final Color color;
   final double size;
@@ -55,6 +63,17 @@ class _SplashGateState extends State<SplashGate>
   late final AnimationController _exitController;
   late final AnimationController _textController;
 
+  // Pilote toutes les animations de fond (vinylGroove, concentricWaves,
+  // auroraGradient). Une seule boucle continue de 14s, chaque style en
+  // dérive ce dont il a besoin (rotation, phase, angle...) — pas besoin
+  // d'un controller séparé par style.
+  late final AnimationController _backgroundController;
+
+  // Rotation lente et continue du disque vinyle en fond, toujours
+  // présent quel que soit le _style tiré. Durée longue (20s/tour) pour
+  // une rotation perçue comme fluide et non-mécanique.
+  late final AnimationController _vinylRotationController;
+
   late final Animation<double> _breatheScale;
   late final Animation<double> _pressScale;
   late final Animation<double> _zoomScale;
@@ -62,6 +81,10 @@ class _SplashGateState extends State<SplashGate>
   late final Animation<double> _glowOpacity;
 
   late final List<_BlurDot> _dots;
+  late final _SplashStyle _style;
+  late final Color _accentColor;
+  late final Color _accentColorSecondary;
+  late final Color _vinylColor;
 
   // Palette large et vive : les couleurs piochées dedans restent
   // harmonieuses entre elles même en combinaison aléatoire.
@@ -83,8 +106,22 @@ class _SplashGateState extends State<SplashGate>
 
     final random = math.Random();
 
+    _style = _SplashStyle.values[random.nextInt(_SplashStyle.values.length)];
+    _accentColor = _dotPalette[random.nextInt(_dotPalette.length)];
+    // Deuxième teinte pour les styles à 2 couleurs (aurora), toujours
+    // décalée d'au moins 3 crans dans la palette pour éviter un dégradé
+    // presque monochrome.
+    _accentColorSecondary = _dotPalette[
+        (_dotPalette.indexOf(_accentColor) + 3 + random.nextInt(3)) %
+            _dotPalette.length];
+
+    // Couleur du vinyle tirée indépendamment de _accentColor, pour que
+    // le disque et le fond de style puissent avoir 2 teintes différentes
+    // (plus riche visuellement qu'une seule couleur partout).
+    _vinylColor = _dotPalette[random.nextInt(_dotPalette.length)];
+
     // Génère 3 à 5 taches, couleurs et positions différentes à chaque
-    // lancement de l'app.
+    // lancement de l'app (utilisées seulement si _style == blurDots).
     final dotCount = 3 + random.nextInt(3);
     _dots = List.generate(dotCount, (_) {
       return _BlurDot(
@@ -104,6 +141,16 @@ class _SplashGateState extends State<SplashGate>
     _breatheScale = Tween<double>(begin: 1.0, end: 1.07).animate(
       CurvedAnimation(parent: _breatheController, curve: Curves.easeInOut),
     );
+
+    _backgroundController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 14),
+    )..repeat();
+
+    _vinylRotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 20),
+    )..repeat();
 
     // Le texte reste invisible pendant 10 secondes, puis apparaît
     // doucement en fondu, comme une pensée qui émerge.
@@ -184,6 +231,8 @@ class _SplashGateState extends State<SplashGate>
     _breatheController.dispose();
     _exitController.dispose();
     _textController.dispose();
+    _backgroundController.dispose();
+    _vinylRotationController.dispose();
     super.dispose();
   }
 
@@ -199,7 +248,99 @@ class _SplashGateState extends State<SplashGate>
     } catch (_) {}
 
     _breatheController.stop();
+    _backgroundController.stop();
+    _vinylRotationController.stop();
     _exitController.forward();
+  }
+
+  Widget _buildBlurDots(double width, double height) {
+    return ImageFiltered(
+      imageFilter: ImageFilter.blur(sigmaX: 90, sigmaY: 90),
+      child: Stack(
+        children: _dots.map((dot) {
+          return Positioned(
+            left: dot.dx * width - dot.size / 2,
+            top: dot.dy * height - dot.size / 2,
+            child: Container(
+              width: dot.size,
+              height: dot.size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: dot.color.withValues(alpha: 0.5),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildVinylGroove(double width, double height) {
+    return AnimatedBuilder(
+      animation: _backgroundController,
+      builder: (context, _) {
+        return CustomPaint(
+          size: Size(width, height),
+          painter: _VinylGroovePainter(
+            color: _accentColor,
+            rotation: _backgroundController.value * 2 * math.pi,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildConcentricWaves(double width, double height) {
+    return AnimatedBuilder(
+      animation: _backgroundController,
+      builder: (context, _) {
+        return CustomPaint(
+          size: Size(width, height),
+          painter: _ConcentricWavesPainter(
+            color: _accentColor,
+            phase: _backgroundController.value,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAuroraGradient(double width, double height) {
+    return ImageFiltered(
+      imageFilter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
+      child: AnimatedBuilder(
+        animation: _backgroundController,
+        builder: (context, _) {
+          final angle = _backgroundController.value * 2 * math.pi;
+          return Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment(math.cos(angle), math.sin(angle)),
+                end: Alignment(-math.cos(angle), -math.sin(angle)),
+                colors: [
+                  _accentColor.withValues(alpha: 0.5),
+                  _accentColorSecondary.withValues(alpha: 0.4),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildBackground(double width, double height) {
+    switch (_style) {
+      case _SplashStyle.blurDots:
+        return _buildBlurDots(width, height);
+      case _SplashStyle.vinylGroove:
+        return _buildVinylGroove(width, height);
+      case _SplashStyle.concentricWaves:
+        return _buildConcentricWaves(width, height);
+      case _SplashStyle.auroraGradient:
+        return _buildAuroraGradient(width, height);
+    }
   }
 
   @override
@@ -239,34 +380,34 @@ class _SplashGateState extends State<SplashGate>
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          // Taches de couleur floues, en fond.
-                          ImageFiltered(
-                            imageFilter: ImageFilter.blur(
-                              sigmaX: 90,
-                              sigmaY: 90,
-                            ),
-                            child: Stack(
-                              children: _dots.map((dot) {
-                                return Positioned(
-                                  left: dot.dx * width - dot.size / 2,
-                                  top: dot.dy * height - dot.size / 2,
-                                  child: Container(
-                                    width: dot.size,
-                                    height: dot.size,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: dot.color.withValues(
-                                        alpha: 0.5,
-                                      ),
-                                    ),
+                          // Disque vinyle qui tourne, toujours présent en
+                          // fond quel que soit le _style tiré au sort.
+                          RepaintBoundary(
+                            child: AnimatedBuilder(
+                              animation: _vinylRotationController,
+                              builder: (context, _) {
+                                return CustomPaint(
+                                  size: Size(width, height),
+                                  painter: _SpinningVinylPainter(
+                                    color: _vinylColor,
+                                    rotation:
+                                        _vinylRotationController.value *
+                                            2 *
+                                            math.pi,
                                   ),
                                 );
-                              }).toList(),
+                              },
                             ),
                           ),
 
-                          // Voile sombre par-dessus les taches pour garder
-                          // un fond globalement assombri et le logo lisible.
+                          // Fond, style tiré au hasard au lancement.
+                          RepaintBoundary(
+                            child: _buildBackground(width, height),
+                          ),
+
+                          // Voile sombre par-dessus le fond pour garder
+                          // une lecture cohérente du logo peu importe le
+                          // style tiré.
                           Container(
                             color: const Color(0xFF0A0910).withValues(
                               alpha: 0.45,
@@ -274,32 +415,24 @@ class _SplashGateState extends State<SplashGate>
                           ),
 
                           // Logo + texte, au premier plan.
-                          Center(
-                            child: AnimatedBuilder(
-                              animation: Listenable.merge([
-                                _breatheController,
-                                _exitController,
-                                _textController,
-                              ]),
-                              builder: (context, _) {
-                                final scale = _exiting
-                                    ? _pressScale.value * _zoomScale.value
-                                    : _breatheScale.value;
-                                final opacity = _exiting
-                                    ? _exitOpacity.value
-                                    : 1.0;
-                                final textOpacity = _showText && !_exiting
-                                    ? Curves.easeOut.transform(
-                                            _textController.value,
-                                          ) *
-                                          0.55
-                                    : 0.0;
-
-                                return Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    if (_exiting)
-                                      Opacity(
+                          Align(
+                            alignment: const Alignment(0, -0.035), // -1 = tout en haut, 0 = centre, 1 = tout en bas
+                            child: RepaintBoundary(
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  // Glow : isolé dans son propre
+                                  // AnimatedBuilder, n'écoute QUE
+                                  // _exitController (quasi toujours à
+                                  // l'arrêt), donc ne force jamais de
+                                  // rebuild pendant la respiration.
+                                  AnimatedBuilder(
+                                    animation: _exitController,
+                                    builder: (context, _) {
+                                      if (!_exiting) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      return Opacity(
                                         opacity: _glowOpacity.value,
                                         child: Container(
                                           width: 400,
@@ -314,23 +447,67 @@ class _SplashGateState extends State<SplashGate>
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    Opacity(
-                                      opacity: opacity,
-                                      child: Transform.scale(
-                                        scale: scale,
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const AppLogo(size: 150),
-                                            const SizedBox(height: 40),
-                                            Opacity(
+                                      );
+                                    },
+                                  ),
+
+                                  // Logo + textes : construits UNE SEULE
+                                  // FOIS (passés en `child`), seule la
+                                  // Transform/Opacity autour est
+                                  // recalculée à chaque frame -> plus de
+                                  // relayout de texte, plus de saccade.
+                                  AnimatedBuilder(
+                                    animation: Listenable.merge([
+                                      _breatheController,
+                                      _exitController,
+                                    ]),
+                                    builder: (context, child) {
+                                      final scale = _exiting
+                                          ? _pressScale.value *
+                                              _zoomScale.value
+                                          : _breatheScale.value;
+                                      final opacity =
+                                          _exiting ? _exitOpacity.value : 1.0;
+
+                                      return Opacity(
+                                        opacity: opacity,
+                                        child: Transform.scale(
+                                          scale: scale,
+                                          filterQuality: FilterQuality.medium,
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const AppLogo(size: 140),
+                                        const SizedBox(height: 40),
+                                        // Le texte reste dans son propre
+                                        // AnimatedBuilder plus fin : lui
+                                        // seul écoute _textController, il
+                                        // ne redéclenche donc pas de
+                                        // rebuild du logo au-dessus.
+                                        AnimatedBuilder(
+                                          animation: _textController,
+                                          builder: (context, _) {
+                                            final textOpacity =
+                                                _showText && !_exiting
+                                                    ? Curves.easeOut
+                                                            .transform(
+                                                              _textController
+                                                                  .value,
+                                                            ) *
+                                                        0.55
+                                                    : 0.0;
+
+                                            return Opacity(
                                               opacity: textOpacity,
                                               child: Column(
                                                 mainAxisSize:
                                                     MainAxisSize.min,
-                                                children: [
-                                                  const Text(
+                                                children: const [
+                                                  Text(
                                                     'my collection of vinyl',
                                                     textAlign:
                                                         TextAlign.center,
@@ -346,8 +523,8 @@ class _SplashGateState extends State<SplashGate>
                                                           TextDecoration.none,
                                                     ),
                                                   ),
-                                                  const SizedBox(height: 20),
-                                                  const Text(
+                                                  SizedBox(height: 20),
+                                                  Text(
                                                     'tap to enter',
                                                     textAlign:
                                                         TextAlign.center,
@@ -365,14 +542,14 @@ class _SplashGateState extends State<SplashGate>
                                                   ),
                                                 ],
                                               ),
-                                            ),
-                                          ],
+                                            );
+                                          },
                                         ),
-                                      ),
+                                      ],
                                     ),
-                                  ],
-                                );
-                              },
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -386,4 +563,156 @@ class _SplashGateState extends State<SplashGate>
       ],
     );
   }
+}
+
+/// Anneaux concentriques façon sillons de vinyle, avec un reflet lumineux
+/// qui tourne lentement dessus — effet disque qui tourne sous la
+/// lumière. Utilisé uniquement quand _style == vinylGroove.
+class _VinylGroovePainter extends CustomPainter {
+  final Color color;
+  final double rotation;
+
+  _VinylGroovePainter({required this.color, required this.rotation});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height * 0.42);
+    final maxRadius = size.longestSide * 0.55;
+    const ringCount = 14;
+
+    for (int i = 0; i < ringCount; i++) {
+      final t = i / ringCount;
+      final radius = maxRadius * (0.25 + 0.75 * t);
+      final paint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = color.withValues(alpha: 0.10 + 0.05 * (1 - t));
+      canvas.drawCircle(center, radius, paint);
+    }
+
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(rotation);
+    final glowPaint = Paint()
+      ..shader = SweepGradient(
+        colors: [
+          Colors.transparent,
+          color.withValues(alpha: 0.25),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.12, 0.24],
+      ).createShader(Rect.fromCircle(center: Offset.zero, radius: maxRadius));
+    canvas.drawCircle(Offset.zero, maxRadius, glowPaint);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _VinylGroovePainter oldDelegate) =>
+      oldDelegate.rotation != rotation || oldDelegate.color != color;
+}
+
+/// Cercles qui naissent au centre et s'étendent en s'estompant, en
+/// boucle continue — effet onde sonore/sonar. Utilisé uniquement quand
+/// _style == concentricWaves.
+class _ConcentricWavesPainter extends CustomPainter {
+  final Color color;
+  final double phase; // 0..1, boucle
+
+  _ConcentricWavesPainter({required this.color, required this.phase});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height * 0.4);
+    final maxRadius = size.longestSide * 0.7;
+    const waveCount = 3;
+
+    for (int i = 0; i < waveCount; i++) {
+      final t = (phase + i / waveCount) % 1.0;
+      final radius = t * maxRadius;
+      final opacity = (1 - t) * 0.22;
+      final paint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = color.withValues(alpha: opacity);
+      canvas.drawCircle(center, radius, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ConcentricWavesPainter oldDelegate) =>
+      oldDelegate.phase != phase || oldDelegate.color != color;
+}
+
+/// Un vrai disque vinyle qui tourne en continu, toujours affiché en fond
+/// derrière le style tiré au hasard — silhouette du disque, sillons
+/// concentriques, label central coloré, et un reflet lumineux qui
+/// balaie la surface en tournant, comme une lumière qui accroche le
+/// vinyle.
+class _SpinningVinylPainter extends CustomPainter {
+  final Color color;
+  final double rotation;
+
+  _SpinningVinylPainter({required this.color, required this.rotation});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height * 0.42);
+    final discRadius = size.longestSide * 0.62;
+
+    // Silhouette du disque : quasi noir, à peine teinté par la couleur,
+    // pour rester discret sur le fond déjà sombre.
+    final discPaint = Paint()
+      ..color = Color.lerp(const Color(0xFF15121C), color, 0.06)!;
+    canvas.drawCircle(center, discRadius, discPaint);
+
+    // Sillons concentriques.
+    const grooveCount = 26;
+    for (int i = 0; i < grooveCount; i++) {
+      final t = i / grooveCount;
+      final radius = discRadius * (0.32 + 0.66 * t);
+      final paint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = Colors.white.withValues(alpha: 0.035);
+      canvas.drawCircle(center, radius, paint);
+    }
+
+    // Reflet lumineux qui tourne avec le disque, façon lumière qui
+    // accroche la surface d'un vinyle.
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(rotation);
+    final shinePaint = Paint()
+      ..shader = SweepGradient(
+        colors: [
+          Colors.transparent,
+          color.withValues(alpha: 0.22),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.5, 1.0],
+        startAngle: 0,
+        endAngle: math.pi / 3,
+      ).createShader(Rect.fromCircle(center: Offset.zero, radius: discRadius));
+    canvas.drawCircle(Offset.zero, discRadius, shinePaint);
+    canvas.restore();
+
+    // Label central du disque.
+    final labelRadius = discRadius * 0.22;
+    final labelPaint = Paint()..color = color.withValues(alpha: 0.35);
+    canvas.drawCircle(center, labelRadius, labelPaint);
+
+    final labelRingPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..color = color.withValues(alpha: 0.5);
+    canvas.drawCircle(center, labelRadius, labelRingPaint);
+
+    // Petit trou central, comme un vrai vinyle.
+    final holePaint = Paint()..color = const Color(0xFF0A0910);
+    canvas.drawCircle(center, labelRadius * 0.08, holePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SpinningVinylPainter oldDelegate) =>
+      oldDelegate.rotation != rotation || oldDelegate.color != color;
 }
