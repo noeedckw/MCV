@@ -192,8 +192,12 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        body: Container(
         decoration: const BoxDecoration(
           gradient: RadialGradient(
             center: Alignment(-0.3, -0.6),
@@ -204,16 +208,6 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              Container(
-        color: Colors.red,
-        width: double.infinity,
-        padding: const EdgeInsets.all(4),
-        child: Text(
-          'top: ${MediaQuery.of(context).padding.top} | bottom: ${MediaQuery.of(context).padding.bottom}',
-          style: const TextStyle(color: Colors.white, fontSize: 10),
-          textAlign: TextAlign.center,
-        ),
-      ),
               // HEADER fixe en haut : nom de l'app à gauche, logo centré,
               // toggle langue à droite. Row à 3 zones de largeur égale
               // (via Expanded) pour que le logo reste VRAIMENT centré,
@@ -482,6 +476,7 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
