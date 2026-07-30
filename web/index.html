@@ -8,7 +8,7 @@
   <meta name="description" content="A new Flutter project.">
 
   <!-- Viewport -->
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" id="viewport-meta" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -39,45 +39,29 @@
       window.scrollTo(0, 0);
     });
 
-    // FIX PRINCIPAL : en PWA standalone iOS, Flutter calcule mal les
-    // coordonnées de hit-test (clic décalé vers le bas) tant qu'un VRAI
-    // cycle ouverture/fermeture du clavier n'a pas eu lieu au moins une
-    // fois. Un simple `resize` déclenché en JS ne suffit pas car il ne
-    // change aucune vraie valeur de window.innerHeight/visualViewport.
-    //
-    // Ici, on force ce vrai cycle automatiquement au tout premier tap
-    // de l'utilisateur (obligatoire : iOS n'ouvre le clavier via JS que
-    // dans un vrai geste utilisateur, pas au chargement de la page).
-    //
-    // Effet secondaire visible : le clavier système peut flasher
-    // brièvement à l'écran lors de ce tout premier tap.
-    (function () {
-      var warmedUp = false;
+    // FIX (invisible) : force WebKit à recalculer ses métriques de
+    // viewport en perturbant légèrement puis en restaurant le meta
+    // "viewport", sans ouvrir de clavier ni provoquer de saut visuel.
+    // C'est un correctif heuristique pour un bug connu où Flutter web
+    // calcule mal les coordonnées de hit-test au lancement en PWA
+    // standalone iOS.
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        var viewport = document.getElementById('viewport-meta');
+        if (!viewport) return;
 
-      function warmUpViewportMetrics() {
-        if (warmedUp) return;
-        warmedUp = true;
+        var original = viewport.getAttribute('content');
+        // Change minime (échelle max légèrement différente), invisible
+        // à l'oeil, mais suffisante pour forcer WebKit à recalculer.
+        var tweaked = original.replace('maximum-scale=1', 'maximum-scale=1.001');
 
-        var hiddenInput = document.createElement('input');
-        hiddenInput.setAttribute('type', 'text');
-        hiddenInput.setAttribute(
-          'style',
-          'position:fixed; top:-1000px; left:-1000px; opacity:0; height:1px; width:1px; pointer-events:none;'
-        );
-        document.body.appendChild(hiddenInput);
-        hiddenInput.focus();
-
-        setTimeout(function () {
-          hiddenInput.blur();
-          document.body.removeChild(hiddenInput);
-        }, 50);
-      }
-
-      document.addEventListener('touchend', warmUpViewportMetrics, {
-        once: true,
-        passive: true,
-      });
-    })();
+        viewport.setAttribute('content', tweaked);
+        requestAnimationFrame(function () {
+          viewport.setAttribute('content', original);
+          window.dispatchEvent(new Event('resize'));
+        });
+      }, 300);
+    });
   </script>
 
   <script src="flutter_bootstrap.js" async></script>
