@@ -191,13 +191,16 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        body: Container(
+Widget build(BuildContext context) {
+  final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+  final keyboardVisible = bottomInset > 0;
+
+  return GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+    child: Scaffold(
+      resizeToAvoidBottomInset: false,
+      body: Container(
         decoration: const BoxDecoration(
           gradient: RadialGradient(
             center: Alignment(-0.3, -0.6),
@@ -206,280 +209,257 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              // HEADER fixe en haut : nom de l'app à gauche, logo centré,
-              // toggle langue à droite. Row à 3 zones de largeur égale
-              // (via Expanded) pour que le logo reste VRAIMENT centré,
-              // peu importe la largeur du texte ou du toggle.
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'MY',
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.55),
-                                fontSize: 13,
-                                height: 1.2,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 2,
+          // NOUVEAU : compense manuellement le clavier (resizeToAvoidBottomInset
+          // est à false). Le header reste ancré en haut ; seul l'espace du
+          // Expanded se réduit, ce qui pousse le bloc action au-dessus du clavier.
+          child: AnimatedPadding(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            padding: EdgeInsets.only(bottom: bottomInset),
+            child: Column(
+              children: [
+                // HEADER — inchangé
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'MY',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.55),
+                                  fontSize: 13,
+                                  height: 1.2,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 2,
+                                ),
                               ),
-                            ),
-                            Text(
-                              'COLLECTION',
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 17,
-                                height: 1.1,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: .5,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withValues(alpha: 0.35),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 1),
+                              Text(
+                                'COLLECTION',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 17,
+                                  height: 1.1,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: .5,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withValues(alpha: 0.35),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                'OF VINYL',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.62),
+                                  fontSize: 13,
+                                  height: 1.2,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 2.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const AppLogo(size: 68),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: _LanguageToggle(
+                            isFrench: _isFrench,
+                            onChanged: (value) =>
+                                setState(() => _isFrench = value),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // NOUVEAU : titre + sous-titre + carrousel masqués (fondu)
+                // pendant que le clavier est ouvert.
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    child: keyboardVisible
+                        ? const SizedBox.shrink(key: ValueKey('empty'))
+                        : LayoutBuilder(
+                            key: const ValueKey('carousel'),
+                            builder: (context, constraints) {
+                              return SingleChildScrollView(
+                                padding: const EdgeInsets.only(top: 16, bottom: 12),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight,
                                   ),
-                                ],
+                                  child: Align(
+                                    alignment: const Alignment(0, -0.3),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                                          child: Text(
+                                            _s(
+                                              'Connect your Discogs account',
+                                              'Connecter votre compte Discogs',
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: Colors.white.withValues(alpha: 0.95),
+                                              fontSize: 21,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: -.4,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                                          child: Text(
+                                            _s(
+                                              "Follow the 4 steps below to get started in just a few minutes.",
+                                              "Suivez les 4 étapes ci-dessous pour commencer en quelques minutes.",
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: Colors.white.withValues(alpha: 0.60),
+                                              fontSize: 13.5,
+                                              height: 1.35,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 28),
+                                        OnboardingCarousel(steps: _steps),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ),
+
+                // BLOC ACTION — inchangé, remonte tout seul grâce à l'AnimatedPadding
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(32, 0, 32, 24),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 340),
+                      child: GlassContainer(
+                        borderRadius: 16,
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: _isLoading ? null : _openDiscogsSettings,
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: BorderSide(color: Colors.white.withValues(alpha: 0.24)),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              icon: const Icon(Icons.open_in_new_rounded, size: 15),
+                              label: Text(
+                                _s('Create my Discogs key', 'Créer ma clé Discogs'),
+                                style: const TextStyle(fontSize: 13),
                               ),
                             ),
-                            Text(
-                              'OF VINYL',
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.62),
-                                fontSize: 13,
-                                height: 1.2,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 2.5,
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _controller,
+                              enabled: !_isLoading,
+                              obscureText: true,
+                              autocorrect: false,
+                              style: const TextStyle(color: Colors.white, fontSize: 14),
+                              decoration: InputDecoration(
+                                labelText: _s('Paste your Discogs key', 'Coller votre clé Discogs'),
+                                labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 13),
+                                filled: true,
+                                fillColor: Colors.white.withValues(alpha: 0.05),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.14)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.14)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.45)),
+                                ),
                               ),
+                            ),
+                            AnimatedSize(
+                              duration: const Duration(milliseconds: 200),
+                              child: (_errorMessage != null || _successMessage != null)
+                                  ? Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Text(
+                                        _errorMessage ?? _successMessage!,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: _errorMessage != null
+                                              ? const Color(0xFFFF8A8A)
+                                              : const Color(0xFF8AFFA8),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+                            const SizedBox(height: 8),
+                            ElevatedButton(
+                              onPressed: _isLoading ? null : _testConnection,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 16,
+                                      width: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                                    )
+                                  : Text(
+                                      _s('Test connection', 'Tester la connexion'),
+                                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                                    ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                    const AppLogo(size: 68),
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: _LanguageToggle(
-                          isFrench: _isFrench,
-                          onChanged: (value) =>
-                              setState(() => _isFrench = value),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Titre + sous-titre + carrousel : centrés verticalement
-              // dans l'espace restant entre le header et le bloc du bas.
-              // Si l'écran est trop petit pour tout centrer, ça devient
-              // scrollable au lieu de déborder (ConstrainedBox + scroll).
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.only(
-                        top: 16,
-                        bottom: 12,
-                      ),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: constraints.maxHeight,
-                        ),
-                        // Alignement légèrement au-dessus du centre exact
-                        // (-0.3) : ajuste cette valeur pour remonter (plus
-                        // négatif) ou redescendre (vers 0) le bloc.
-                        child: Align(
-                          alignment: const Alignment(0, -0.3),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 20),
-                                child: Text(
-                                  _s(
-                                    'Connect your Discogs account',
-                                    'Connecter votre compte Discogs',
-                                  ),
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.95),
-                                    fontSize: 21,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: -.4,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 20),
-                                child: Text(
-                                  _s(
-                                    "Follow the 4 steps below to get started in just a few minutes.",
-                                    "Suivez les 4 étapes ci-dessous pour commencer en quelques minutes."),
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.60),
-                                    fontSize: 13.5,
-                                    height: 1.35,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 28),
-                              OnboardingCarousel(steps: _steps),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              // BLOC ACTION : plus compact et moins large qu'avant
-              // (padding horizontal augmenté + largeur max), toujours
-              // collé en bas de l'écran.
-              Padding(
-                padding: const EdgeInsets.fromLTRB(32, 0, 32, 24),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 340),
-                    child: GlassContainer(
-                  borderRadius: 16,
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: _isLoading ? null : _openDiscogsSettings,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.24),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        icon: const Icon(Icons.open_in_new_rounded, size: 15),
-                        label: Text(
-                          _s('Create my Discogs key', 'Créer ma clé Discogs'),
-                          style: const TextStyle(fontSize: 13),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _controller,
-                        enabled: !_isLoading,
-                        obscureText: true,
-                        autocorrect: false,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        decoration: InputDecoration(
-                          labelText: _s(
-                              'Paste your Discogs key', 'Coller votre clé Discogs'),
-                          labelStyle: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.55),
-                            fontSize: 13,
-                          ),
-                          filled: true,
-                          fillColor: Colors.white.withValues(alpha: 0.05),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.14),
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.14),
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.45),
-                            ),
-                          ),
-                        ),
-                      ),
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 200),
-                        child: (_errorMessage != null || _successMessage != null)
-                            ? Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: Text(
-                                  _errorMessage ?? _successMessage!,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: _errorMessage != null
-                                        ? const Color(0xFFFF8A8A)
-                                        : const Color(0xFF8AFFA8),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: _isLoading ? null : _testConnection,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 16,
-                                width: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.black,
-                                ),
-                              )
-                            : Text(
-                                _s('Test connection', 'Tester la connexion'),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13.5,
-                                ),
-                              ),
-                      ),
-                    ],
-                  ),
-                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-      ),
-    );
-  }
+    ),
+  );
+}
 }
 
 /// Petit toggle segmenté EN / FR, uniquement pour cet écran de configuration.

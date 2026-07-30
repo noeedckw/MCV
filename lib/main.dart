@@ -11,7 +11,7 @@ import 'providers/connectivity_provider.dart';
 import 'providers/nav_bar_visibility_provider.dart';
 import 'screens/main_navigation_screen.dart';
 import 'screens/discogs_setup_screen.dart';
-import 'splash_gate.dart';
+import 'widgets/splash_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,7 +50,6 @@ class _AppRootState extends State<AppRoot> {
   }
 
   Future<void> _checkToken() async {
-    _tokenStorageService.deleteToken();
     final hasToken = await _tokenStorageService.hasToken();
     DiscogsApi? api;
     if (hasToken) {
