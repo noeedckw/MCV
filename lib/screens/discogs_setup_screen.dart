@@ -204,6 +204,16 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
         child: SafeArea(
           child: Column(
             children: [
+              Container(
+        color: Colors.red,
+        width: double.infinity,
+        padding: const EdgeInsets.all(4),
+        child: Text(
+          'top: ${MediaQuery.of(context).padding.top} | bottom: ${MediaQuery.of(context).padding.bottom}',
+          style: const TextStyle(color: Colors.white, fontSize: 10),
+          textAlign: TextAlign.center,
+        ),
+      ),
               // HEADER fixe en haut : nom de l'app à gauche, logo centré,
               // toggle langue à droite. Row à 3 zones de largeur égale
               // (via Expanded) pour que le logo reste VRAIMENT centré,
@@ -349,7 +359,7 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
               // (padding horizontal augmenté + largeur max), toujours
               // collé en bas de l'écran.
               Padding(
-                padding: const EdgeInsets.fromLTRB(32, 0, 32, 16),
+                padding: const EdgeInsets.fromLTRB(32, 0, 32, 24),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 340),
