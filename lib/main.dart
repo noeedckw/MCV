@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'services/discogs_api.dart';
 import 'services/token_storage_service.dart';
 import 'storage/storage_factory.dart';
+import 'storage/grid_columns_store.dart';
 import 'providers/collection_provider.dart';
 import 'providers/explorer_provider.dart';
 import 'providers/connectivity_provider.dart';
@@ -15,7 +16,7 @@ import 'widgets/splash_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  await GridColumnsStore.init();
   final storage = createStorageService();
   await storage.init();
 

@@ -109,6 +109,8 @@ class _CollectionContainerState extends State<CollectionContainer> {
             ),
           )
         : CollectionGrid(
+            key: ValueKey(view), // <- garantit un State distinct par vue
+            collectionKey: view == CollectionView.owned ? 'collection' : 'wantlist',
             entries: vinyls,
             topPadding: _headerHeight + _headerGap,
             onTapEntry: widget.onTapEntry ?? (_) {},

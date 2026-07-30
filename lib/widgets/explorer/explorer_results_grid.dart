@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import '../../storage/grid_columns_store.dart';
 import 'cards/result_card.dart';
 import 'page_nav.dart';
 
 class GridFormatStyle {
   final double textContainerHeight;
-  final double spacingH; // espace horizontal entre cartes (crossAxisSpacing)
-  final double spacingV; // espace vertical entre cartes (mainAxisSpacing)
+  final double spacingH;
+  final double spacingV;
   final double titleFontSize;
   final double subtitleFontSize;
-  final double metaFontSize; // tags: genre / country / label
-  final double yearFontSize; // année, séparée du reste
+  final double metaFontSize;
+  final double yearFontSize;
   final EdgeInsets textPadding;
   final double horizontalPadding;
   final double? maxGridWidth;
@@ -48,10 +49,11 @@ class ExplorerResultsGrid extends StatefulWidget {
 class _ExplorerResultsGridState extends State<ExplorerResultsGrid> {
   static const int _minColumns = 1;
   static const int _maxColumns = 4;
+  static const int _defaultColumns = 2;
   static const int _itemsPerPage = 40;
 
-  int _crossAxisCount = 2;
-  int _baseCrossAxisCount = 2;
+  late int _crossAxisCount;
+  late int _baseCrossAxisCount;
   int _currentPage = 0;
 
   int get _pageCount => widget.results.isEmpty
@@ -63,6 +65,19 @@ class _ExplorerResultsGridState extends State<ExplorerResultsGrid> {
     if (start >= widget.results.length) return const [];
     final end = (start + _itemsPerPage).clamp(0, widget.results.length).toInt();
     return widget.results.sublist(start, end);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Lecture SYNCHRONE du cache — dispo immédiatement, même si ce State
+    // vient d'être recréé après une recherche vide. Plus de flash.
+    final saved = GridColumnsStore.get('explorer');
+    final initial = (saved != null && saved >= _minColumns && saved <= _maxColumns)
+        ? saved
+        : _defaultColumns;
+    _crossAxisCount = initial;
+    _baseCrossAxisCount = initial;
   }
 
   @override
@@ -92,11 +107,11 @@ class _ExplorerResultsGridState extends State<ExplorerResultsGrid> {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════
-  // TOUT SE RÈGLE ICI. Un multiplicateur simple par nombre de colonnes.
-  // scale = 1.0 → taille normale. 1.2 → 20% plus grand. 0.8 → 20% plus petit.
-  // isLarge = true quand l'écran fait plus de 600px de large.
-  // ═══════════════════════════════════════════════════════════════════
+  void _onScaleEnd(ScaleEndDetails details) {
+    // Sauvegarde une seule fois le geste terminé, pas à chaque frame.
+    GridColumnsStore.set('explorer', _crossAxisCount);
+  }
+
   double _scaleFor(int columns, bool isLarge) {
     return switch (columns) {
       1 => isLarge ? 1.0 : 0.85,
@@ -110,7 +125,6 @@ class _ExplorerResultsGridState extends State<ExplorerResultsGrid> {
     final isLarge = maxWidth > 600;
     final scale = _scaleFor(columns, isLarge);
 
-    // Valeurs de base par colonne, à scale = 1.0
     final (
       title,
       sub,
@@ -124,17 +138,17 @@ class _ExplorerResultsGridState extends State<ExplorerResultsGrid> {
       maxGrid,
     ) = switch (columns) {
       1 => (
-        22.0, 16.0, 14.0, // title, subtitle, meta (tags)
-        16.0, // ← yearFontSize, séparée des tags pour le format 1
-        40.0, 40.0, // spacingH, spacingV
-        40.0, // horizontalPadding (bords de la grille)
-        150.0, // textContainerHeight
+        22.0, 16.0, 14.0,
+        16.0,
+        40.0, 40.0,
+        40.0,
+        150.0,
         const EdgeInsets.fromLTRB(16, 14, 16, 14),
-        700.0, // maxGridWidth
+        700.0,
       ),
       2 => (
         16.5, 15.5, 14.5,
-        14.0, // yearFontSize = metaFontSize par défaut ici
+        14.0,
         12.0, 14.0,
         36.0,
         74.0,
@@ -204,7 +218,6 @@ class _ExplorerResultsGridState extends State<ExplorerResultsGrid> {
                 style.horizontalPadding,
                 90,
                 style.horizontalPadding,
-                // 72 de base + safe area + marge pour le PageNav flottant
                 _pageCount > 1 ? 96 + bottomSafeArea : 72 + bottomSafeArea,
               ),
               crossAxisCount: _crossAxisCount,
@@ -225,6 +238,7 @@ class _ExplorerResultsGridState extends State<ExplorerResultsGrid> {
             return GestureDetector(
               onScaleStart: (_) => _baseCrossAxisCount = _crossAxisCount,
               onScaleUpdate: _onScaleUpdate,
+              onScaleEnd: _onScaleEnd,
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 260),
                 switchInCurve: Curves.easeOut,

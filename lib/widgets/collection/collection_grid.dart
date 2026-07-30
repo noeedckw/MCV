@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../storage/vinyl_entry.dart';
 import '../explorer/explorer_results_grid.dart' show GridFormatStyle;
 import 'cards/collection_result_card.dart';
@@ -9,17 +10,23 @@ import 'cards/collection_result_card.dart';
 /// `ExplorerResultsGrid`, just fed from local [VinylEntry] objects instead
 /// of Discogs search results.
 ///
+/// [collectionKey] identifies which list this grid belongs to (e.g.
+/// `'collection'` or `'wantlist'`) so each keeps its own persisted column
+/// count in `SharedPreferences`, independent of the other.
+///
 /// Pure presentation: it just lays out [entries]. Deciding whether to show
 /// this or `CollectionEmptyState` is `CollectionContainer`'s job.
 class CollectionGrid extends StatefulWidget {
   final List<VinylEntry> entries;
   final ValueChanged<VinylEntry> onTapEntry;
   final double topPadding;
+  final String collectionKey;
 
   const CollectionGrid({
     super.key,
     required this.entries,
     required this.onTapEntry,
+    required this.collectionKey,
     this.topPadding = 4,
   });
 
@@ -30,9 +37,50 @@ class CollectionGrid extends StatefulWidget {
 class _CollectionGridState extends State<CollectionGrid> {
   static const int _minColumns = 1;
   static const int _maxColumns = 4;
+  static const int _defaultColumns = 2;
 
-  int _crossAxisCount = 2;
-  int _baseCrossAxisCount = 2;
+  int _crossAxisCount = _defaultColumns;
+  int _baseCrossAxisCount = _defaultColumns;
+  bool _loadedFromPrefs = false;
+
+  String get _prefsKey => 'grid_columns_${widget.collectionKey}';
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreColumnCount();
+  }
+
+  @override
+  void didUpdateWidget(covariant CollectionGrid oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the same widget instance gets reused for a different list
+    // (e.g. key changes), reload the right saved value.
+    if (oldWidget.collectionKey != widget.collectionKey) {
+      _loadedFromPrefs = false;
+      _restoreColumnCount();
+    }
+  }
+
+  Future<void> _restoreColumnCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getInt(_prefsKey);
+    if (!mounted) return;
+    if (saved != null && saved >= _minColumns && saved <= _maxColumns) {
+      setState(() {
+        _crossAxisCount = saved;
+        _baseCrossAxisCount = saved;
+        _loadedFromPrefs = true;
+      });
+    } else {
+      _loadedFromPrefs = true;
+    }
+  }
+
+  Future<void> _persistColumnCount(int columns) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_prefsKey, columns);
+  }
 
   void _onScaleUpdate(ScaleUpdateDetails details) {
     final delta = ((details.scale - 1) * 3).round();
@@ -43,6 +91,11 @@ class _CollectionGridState extends State<CollectionGrid> {
     if (target != _crossAxisCount) {
       setState(() => _crossAxisCount = target);
     }
+  }
+
+  void _onScaleEnd(ScaleEndDetails details) {
+    // Save once the gesture settles, not on every frame of the pinch.
+    _persistColumnCount(_crossAxisCount);
   }
 
   // Same scale table as ExplorerResultsGrid, so switching tabs doesn't feel
@@ -145,6 +198,12 @@ class _CollectionGridState extends State<CollectionGrid> {
   Widget build(BuildContext context) {
     final bottomSafeArea = MediaQuery.of(context).viewPadding.bottom;
 
+    // Avoid a one-frame flash at the default column count before the
+    // saved value comes back from SharedPreferences.
+    if (!_loadedFromPrefs) {
+      return const SizedBox.shrink();
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final style = _getGridStyle(_crossAxisCount, constraints.maxWidth);
@@ -175,6 +234,7 @@ class _CollectionGridState extends State<CollectionGrid> {
         return GestureDetector(
           onScaleStart: (_) => _baseCrossAxisCount = _crossAxisCount,
           onScaleUpdate: _onScaleUpdate,
+          onScaleEnd: _onScaleEnd,
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 260),
             switchInCurve: Curves.easeOut,
