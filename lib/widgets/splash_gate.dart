@@ -392,10 +392,31 @@ class _SplashGateState extends State<SplashGate>
     // plancher fixe, pour garantir un résultat visible sur tous les
     // appareils/contextes.
     final topInset = MediaQuery.of(context).padding.top;
-    final solidHeight = math.max(topInset, 60.0);
-    const fadeLength = 160.0;
+    final solidHeight = math.max(topInset, 40.0);
+    // Fondu volontairement long : sur Safari/Chrome iOS un fondu court
+    // se perçoit comme un bloc noir qui s'arrête net. Une longueur
+    // généreuse + une courbe (et non une ligne droite ni des paliers
+    // trop espacés) donne un vrai dégradé progressif, sans marche ni
+    // coupure visible.
+    const fadeLength = 260.0;
     final totalHeight = solidHeight + fadeLength;
     final solidStop = solidHeight / totalHeight;
+
+    // Génère de nombreux paliers rapprochés en suivant une courbe
+    // easeOut (opacité qui décroît vite au début, puis très
+    // doucement) : c'est ce qui donne l'impression d'un fondu long et
+    // naturel plutôt que d'un dégradé linéaire "cassant".
+    const stopCount = 24;
+    final colors = <Color>[_splashBackgroundColor, _splashBackgroundColor];
+    final stops = <double>[0.0, solidStop];
+
+    for (int i = 1; i <= stopCount; i++) {
+      final t = i / stopCount; // 0..1 le long du fondu
+      final eased = 1 - math.pow(1 - t, 2.4).toDouble();
+      final opacity = (1 - eased).clamp(0.0, 1.0);
+      colors.add(_splashBackgroundColor.withValues(alpha: opacity));
+      stops.add(solidStop + (1 - solidStop) * t);
+    }
 
     return Positioned(
       top: 0,
@@ -408,24 +429,8 @@ class _SplashGateState extends State<SplashGate>
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                _splashBackgroundColor, // 100% opaque, bande large
-                _splashBackgroundColor,
-                _splashBackgroundColor.withValues(alpha: 0.95),
-                _splashBackgroundColor.withValues(alpha: 0.75),
-                _splashBackgroundColor.withValues(alpha: 0.45),
-                _splashBackgroundColor.withValues(alpha: 0.15),
-                _splashBackgroundColor.withValues(alpha: 0.0),
-              ],
-              stops: [
-                0.0,
-                solidStop,
-                solidStop + (1 - solidStop) * 0.15,
-                solidStop + (1 - solidStop) * 0.35,
-                solidStop + (1 - solidStop) * 0.58,
-                solidStop + (1 - solidStop) * 0.80,
-                1.0,
-              ],
+              colors: colors,
+              stops: stops,
             ),
           ),
         ),
@@ -761,7 +766,16 @@ class _SpinningVinylPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height * 0.42);
-    final discRadius = size.longestSide * 0.62;
+    // Rayon du disque visible (silhouette + sillons) : agrandi pour
+    // éviter que le bord du disque soit visible en bas sur certains
+    // écrans. Volontairement DÉCOUPLÉ du rayon utilisé pour le label
+    // central ci-dessous, pour ne pas faire grandir le logo avec lui.
+    final discRadius = size.longestSide * 0.78;
+    // Rayon de référence pour le label central : reste basé sur le
+    // ratio d'origine (0.62, identique à _discRadiusRatio du state),
+    // pour que le rond central et donc le logo gardent exactement leur
+    // taille et position d'avant, peu importe la taille du disque.
+    final labelBaseRadius = size.longestSide * 0.62;
 
     // Silhouette du disque : quasi noir, à peine teinté par la couleur,
     // pour rester discret sur le fond déjà sombre.
@@ -800,8 +814,9 @@ class _SpinningVinylPainter extends CustomPainter {
     canvas.drawCircle(Offset.zero, discRadius, shinePaint);
     canvas.restore();
 
-    // Label central du disque.
-    final labelRadius = discRadius * 0.22;
+    // Label central du disque — basé sur labelBaseRadius (taille
+    // d'origine), pas sur le discRadius agrandi.
+    final labelRadius = labelBaseRadius * 0.22;
     final labelPaint = Paint()..color = color.withValues(alpha: 0.35);
     canvas.drawCircle(center, labelRadius, labelPaint);
 
