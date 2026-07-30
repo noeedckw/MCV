@@ -103,11 +103,46 @@ class OnboardingCarousel extends StatefulWidget {
 class _OnboardingCarouselState extends State<OnboardingCarousel> {
   late final PageController _pageController;
   int _page = 0;
+  bool _precached = false;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_precached) {
+      _precached = true;
+      _precacheStepImages(widget.steps);
+    }
+  }
+
+   @override
+  void didUpdateWidget(covariant OnboardingCarousel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Si les chemins d'images changent (ex: changement de langue côté
+    // parent -> nouvelles OnboardingStep avec d'autres imageUrl), on
+    // précharge les nouvelles images pour éviter le flash au swipe.
+    final oldPaths = oldWidget.steps.map((s) => s.imageUrl).toList();
+    final newPaths = widget.steps.map((s) => s.imageUrl).toList();
+    if (!listEquals(oldPaths, newPaths)) {
+      _precacheStepImages(widget.steps);
+    }
+  }
+
+  Future<void> _precacheStepImages(List<OnboardingStep> steps) async {
+    for (final step in steps) {
+      final path = step.imageUrl;
+      if (path == null) continue;
+      final provider = _isNetworkUrl(path)
+          ? NetworkImage(path) as ImageProvider
+          : AssetImage(path);
+      // ignore les erreurs (ex: asset pas encore déclaré dans pubspec.yaml)
+      precacheImage(provider, context).catchError((_) {});
+    }
   }
 
   @override

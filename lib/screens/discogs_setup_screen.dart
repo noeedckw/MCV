@@ -104,6 +104,26 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
       ),
     ];
 
+  bool _otherLangPrecached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_otherLangPrecached) {
+      _otherLangPrecached = true;
+      _precacheOtherLanguageImages();
+    }
+  }
+
+  Future<void> _precacheOtherLanguageImages() async {
+    final otherLangPaths = _isFrench
+        ? [_step2ImageEn, _step3ImageEn]
+        : [_step2ImageFr, _step3ImageFr];
+    for (final path in otherLangPaths) {
+      await precacheImage(AssetImage(path), context).catchError((_) {});
+    }
+  }
+
   @override
   void dispose() {
     _controller.dispose();
