@@ -86,6 +86,23 @@ class _SplashGateState extends State<SplashGate>
   late final Color _accentColorSecondary;
   late final Color _vinylColor;
 
+  // Fraction verticale du centre du vinyle (utilisée à la fois par le
+  // painter du disque ET par le positionnement du logo, pour qu'ils
+  // soient garantis alignés peu importe la taille de l'écran).
+  static const double _vinylCenterYFraction = 0.42;
+
+  // Ratio entre le rayon du disque et le "longestSide" du conteneur
+  // (même valeur que dans _SpinningVinylPainter / _VinylGroovePainter).
+  static const double _discRadiusRatio = 0.62;
+
+  // Ratio entre le rayon du label central et le rayon du disque (même
+  // valeur que dans _SpinningVinylPainter).
+  static const double _labelRadiusRatio = 0.22;
+
+  // Le logo doit être légèrement plus petit que le rond du label, pour
+  // matcher visuellement sans le déborder. 1.0 = taille identique.
+  static const double _logoToLabelRatio = 0.75;
+
   // Palette large et vive : les couleurs piochées dedans restent
   // harmonieuses entre elles même en combinaison aléatoire.
   static const List<Color> _dotPalette = [
@@ -373,6 +390,30 @@ class _SplashGateState extends State<SplashGate>
                     final width = constraints.maxWidth;
                     final height = constraints.maxHeight;
 
+                    // Géométrie du disque vinyle, calculée UNE FOIS ici
+                    // avec exactement les mêmes ratios que les painters
+                    // (_SpinningVinylPainter / _VinylGroovePainter), pour
+                    // garantir que le logo tombe pile sur le rond
+                    // central quelle que soit la taille de l'écran.
+                    final vinylCenterY = height * _vinylCenterYFraction;
+                    final discRadius =
+                        math.max(width, height) * _discRadiusRatio;
+                    final labelRadius = discRadius * _labelRadiusRatio;
+
+                    // Taille du logo : un peu plus petit que le rond du
+                    // label, responsive car dérivée de discRadius.
+                    final logoSize =
+                        labelRadius * 2 * _logoToLabelRatio;
+
+                    // Glow proportionnel au logo (même ratio qu'avant :
+                    // 400 / 140 ≈ 2.85).
+                    final glowSize = logoSize * 2.85;
+
+                    // Conversion de la position Y du centre du vinyle
+                    // (en pixels) vers une Alignment (-1..1) utilisable
+                    // dans un Stack en StackFit.expand.
+                    final logoAlignY = (vinylCenterY / height) * 2 - 1 - 0.04;
+
                     return Container(
                       width: double.infinity,
                       height: double.infinity,
@@ -414,9 +455,11 @@ class _SplashGateState extends State<SplashGate>
                             ),
                           ),
 
-                          // Logo + texte, au premier plan.
+                          // Logo, calé exactement sur le centre du rond
+                          // central du vinyle (même point que le label
+                          // dessiné par _SpinningVinylPainter).
                           Align(
-                            alignment: const Alignment(0, -0.035), // -1 = tout en haut, 0 = centre, 1 = tout en bas
+                            alignment: Alignment(0, logoAlignY),
                             child: RepaintBoundary(
                               child: Stack(
                                 alignment: Alignment.center,
@@ -435,8 +478,8 @@ class _SplashGateState extends State<SplashGate>
                                       return Opacity(
                                         opacity: _glowOpacity.value,
                                         child: Container(
-                                          width: 400,
-                                          height: 400,
+                                          width: glowSize,
+                                          height: glowSize,
                                           decoration: const BoxDecoration(
                                             shape: BoxShape.circle,
                                             gradient: RadialGradient(
@@ -451,11 +494,11 @@ class _SplashGateState extends State<SplashGate>
                                     },
                                   ),
 
-                                  // Logo + textes : construits UNE SEULE
-                                  // FOIS (passés en `child`), seule la
+                                  // Logo seul : construit UNE SEULE FOIS
+                                  // (passé en `child`), seule la
                                   // Transform/Opacity autour est
                                   // recalculée à chaque frame -> plus de
-                                  // relayout de texte, plus de saccade.
+                                  // relayout, plus de saccade.
                                   AnimatedBuilder(
                                     animation: Listenable.merge([
                                       _breatheController,
@@ -478,77 +521,71 @@ class _SplashGateState extends State<SplashGate>
                                         ),
                                       );
                                     },
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const AppLogo(size: 140),
-                                        const SizedBox(height: 40),
-                                        // Le texte reste dans son propre
-                                        // AnimatedBuilder plus fin : lui
-                                        // seul écoute _textController, il
-                                        // ne redéclenche donc pas de
-                                        // rebuild du logo au-dessus.
-                                        AnimatedBuilder(
-                                          animation: _textController,
-                                          builder: (context, _) {
-                                            final textOpacity =
-                                                _showText && !_exiting
-                                                    ? Curves.easeOut
-                                                            .transform(
-                                                              _textController
-                                                                  .value,
-                                                            ) *
-                                                        0.55
-                                                    : 0.0;
-
-                                            return Opacity(
-                                              opacity: textOpacity,
-                                              child: Column(
-                                                mainAxisSize:
-                                                    MainAxisSize.min,
-                                                children: const [
-                                                  Text(
-                                                    'my collection of vinyl',
-                                                    textAlign:
-                                                        TextAlign.center,
-                                                    style: TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 15,
-                                                      fontWeight:
-                                                          FontWeight.w300,
-                                                      fontStyle:
-                                                          FontStyle.italic,
-                                                      letterSpacing: 1.5,
-                                                      decoration:
-                                                          TextDecoration.none,
-                                                    ),
-                                                  ),
-                                                  SizedBox(height: 20),
-                                                  Text(
-                                                    'tap to enter',
-                                                    textAlign:
-                                                        TextAlign.center,
-                                                    style: TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 12,
-                                                      fontWeight:
-                                                          FontWeight.w300,
-                                                      fontStyle:
-                                                          FontStyle.italic,
-                                                      letterSpacing: 1,
-                                                      decoration:
-                                                          TextDecoration.none,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ],
-                                    ),
+                                    child: AppLogo(size: logoSize),
                                   ),
                                 ],
+                              ),
+                            ),
+                          ),
+
+                          // Texte, positionné indépendamment du logo :
+                          // toujours au même point de départ (centre du
+                          // vinyle), puis décalé vers le bas d'une
+                          // distance relative à logoSize, pour rester
+                          // cohérent quelle que soit la taille du logo.
+                          Align(
+                            alignment: Alignment(0, logoAlignY),
+                            child: Transform.translate(
+                              offset: Offset(0, logoSize * 1.1),
+                              child: RepaintBoundary(
+                                child: AnimatedBuilder(
+                                  animation: _textController,
+                                  builder: (context, _) {
+                                    final textOpacity =
+                                        _showText && !_exiting
+                                            ? Curves.easeOut.transform(
+                                                  _textController.value,
+                                                ) *
+                                                0.55
+                                            : 0.0;
+
+                                    return Opacity(
+                                      opacity: textOpacity,
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: const [
+                                          Text(
+                                            'my collection of vinyl',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w300,
+                                              fontStyle: FontStyle.italic,
+                                              letterSpacing: 1.5,
+                                              decoration:
+                                                  TextDecoration.none,
+                                            ),
+                                          ),
+                                          SizedBox(height: 20),
+                                          Text(
+                                            'tap to enter',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w300,
+                                              fontStyle: FontStyle.italic,
+                                              letterSpacing: 1,
+                                              decoration:
+                                                  TextDecoration.none,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                             ),
                           ),
