@@ -422,16 +422,19 @@ class _SplashGateState extends State<SplashGate>
     // avant de le réduire à une taille définitive plus discrète.
     final screenHeight = MediaQuery.of(context).size.height;
     final fadeLength = (screenHeight * 0.5) - solidHeight;
-    const bandCount = 40;
+    const bandCount = 16;
     final bandHeight = fadeLength / bandCount;
 
     final bands = <Widget>[];
     for (int i = 0; i < bandCount; i++) {
       final t = i / bandCount; // 0..1 le long du fondu
-      // Courbe easeOut : décroissance rapide au début, puis douce —
-      // évite l'effet "bloc qui coupe net".
-      final eased = 1 - math.pow(1 - t, 2.4).toDouble();
-      final opacity = (1 - eased).clamp(0.0, 1.0);
+      // Courbe inversée par rapport à avant : opacity reste PROCHE DE
+      // 1 (noir plein) pendant la majeure partie du fondu, et ne
+      // chute vraiment que sur la toute fin. L'ancienne courbe
+      // perdait son opacité dès le début, ce qui révélait le fond
+      // coloré du splash trop tôt et donnait une impression de gris,
+      // pas de noir.
+      final opacity = (1 - math.pow(t, 4.0)).toDouble().clamp(0.0, 1.0);
 
       bands.add(
         Positioned(

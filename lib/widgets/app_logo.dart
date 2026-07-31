@@ -18,16 +18,20 @@ class AppLogo extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        // Beaucoup moins arrondi qu'un cercle : un rayon proportionnel
-        // à la taille, façon icône d'app plutôt que pastille ronde.
-        borderRadius: BorderRadius.circular(size * 0.16),
+        borderRadius: BorderRadius.circular(size * 0.25),
         gradient: LinearGradient(
           colors: [
-            Colors.white.withValues(alpha: 0.16),
-            Colors.white.withValues(alpha: 0.04),
+            const Color.fromARGB(255, 0, 0, 0).withValues(alpha: 0.16),
+            const Color.fromARGB(255, 0, 0, 0).withValues(alpha: 0.04),
           ],
         ),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Image.asset(
