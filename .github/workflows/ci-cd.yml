@@ -17,7 +17,7 @@ env:
   FLUTTER_VERSION: '3.44.6'
 
 jobs:
-  # ---------- Build Web ----------
+  # ---------- Build Web + Android + Landing page ----------
   build_web:
     name: Build Web
     runs-on: ubuntu-latest
@@ -38,6 +38,21 @@ jobs:
 
       - name: Build web
         run: flutter build web --release --base-href "/MCV/"
+
+      # NOUVEAU : APK Android, packagée dans le même artefact que le site,
+      # pour que la vitrine puisse proposer un lien de téléchargement direct.
+      # Signée avec la clé de debug par défaut de Flutter (suffisant pour une
+      # installation "sideload" hors Play Store) — remplacer par une vraie
+      # config de signature si l'app doit un jour aller sur le Play Store.
+      - name: Build Android APK
+        run: flutter build apk --release
+
+      - name: Assemble Pages output
+        run: |
+          mkdir -p build/web/downloads
+          cp build/app/outputs/flutter-apk/app-release.apk build/web/downloads/mcv.apk
+          mkdir -p build/web/landing
+          cp -r landing/. build/web/landing/
 
       - uses: actions/upload-pages-artifact@v3
         with:
