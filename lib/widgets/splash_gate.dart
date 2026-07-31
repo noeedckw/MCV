@@ -416,21 +416,25 @@ class _SplashGateState extends State<SplashGate>
     // plancher fixe, pour garantir un résultat visible sur tous les
     // appareils/contextes.
     final topInset = MediaQuery.of(context).padding.top;
-    final solidHeight = math.max(topInset, 40.0);
-    // Fondu sur environ 15-20% de la hauteur d'écran — taille finale
-    // validée après test (l'exagération à 50% n'était que pour
-    // vérifier la visibilité sur mobile).
     final screenHeight = MediaQuery.of(context).size.height;
-    final fadeLength = (screenHeight * 0.18) - solidHeight;
-    const bandCount = 50;
+    // Zone 100% opaque minuscule : juste de quoi matcher la status
+    // bar, sans occuper d'espace visible en soi.
+    final solidHeight = math.max(topInset, math.max(screenHeight * 0.004, 6.0));
+    // Fondu allongé pour un dégradé smooth et bien visible, sans pour
+    // autant reprendre toute la hauteur testée précédemment.
+    final fadeLength = math.max((screenHeight * 0.12), 0.0);
+    const bandCount = 60;
     final bandHeight = fadeLength / bandCount;
 
     final bands = <Widget>[];
     for (int i = 0; i < bandCount; i++) {
       final t = i / bandCount; // 0..1 le long du fondu
-      // Exposant encore réduit (2 -> 1.4) + 50 bandes : transition
-      // très progressive, presque continue à l'œil.
-      final opacity = (1 - math.pow(t, 1.4)).toDouble().clamp(0.0, 1.0);
+      // Courbe linéaire simple : sur une zone de fondu aussi courte
+      // (7% de l'écran), une courbe qui reste opaque longtemps avant
+      // de chuter donnait l'impression d'un bloc noir qui coupe net.
+      // Le linéaire répartit la baisse d'opacité uniformément sur
+      // toute la zone -> fondu visible du début à la fin.
+      final opacity = (1 - t).clamp(0.0, 1.0);
 
       bands.add(
         Positioned(
