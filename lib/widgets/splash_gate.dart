@@ -417,24 +417,20 @@ class _SplashGateState extends State<SplashGate>
     // appareils/contextes.
     final topInset = MediaQuery.of(context).padding.top;
     final solidHeight = math.max(topInset, 40.0);
-    // TEMPORAIRE / TEST : fondu exagéré jusqu'à environ la moitié de
-    // l'écran, pour vérifier qu'il est bien visible sur iPhone/Android
-    // avant de le réduire à une taille définitive plus discrète.
+    // Fondu sur environ 15-20% de la hauteur d'écran — taille finale
+    // validée après test (l'exagération à 50% n'était que pour
+    // vérifier la visibilité sur mobile).
     final screenHeight = MediaQuery.of(context).size.height;
-    final fadeLength = (screenHeight * 0.5) - solidHeight;
-    const bandCount = 16;
+    final fadeLength = (screenHeight * 0.18) - solidHeight;
+    const bandCount = 50;
     final bandHeight = fadeLength / bandCount;
 
     final bands = <Widget>[];
     for (int i = 0; i < bandCount; i++) {
       final t = i / bandCount; // 0..1 le long du fondu
-      // Courbe inversée par rapport à avant : opacity reste PROCHE DE
-      // 1 (noir plein) pendant la majeure partie du fondu, et ne
-      // chute vraiment que sur la toute fin. L'ancienne courbe
-      // perdait son opacité dès le début, ce qui révélait le fond
-      // coloré du splash trop tôt et donnait une impression de gris,
-      // pas de noir.
-      final opacity = (1 - math.pow(t, 4.0)).toDouble().clamp(0.0, 1.0);
+      // Exposant encore réduit (2 -> 1.4) + 50 bandes : transition
+      // très progressive, presque continue à l'œil.
+      final opacity = (1 - math.pow(t, 1.4)).toDouble().clamp(0.0, 1.0);
 
       bands.add(
         Positioned(
