@@ -93,10 +93,13 @@
     letter-spacing:.14em;
     color:var(--ink-dim);
   }
-  .brand .dot{
-    width:9px;height:9px;border-radius:50%;
-    background:var(--gold);
+  .brand .logo-mark{
+    width:26px;
+    height:26px;
+    border-radius:7px;
+    object-fit:cover;
     box-shadow:0 0 0 3px rgba(201,161,91,0.18);
+    display:block;
   }
   .lang-toggle{
     display:flex;
@@ -158,6 +161,27 @@
     .record{animation:none;}
   }
   @keyframes spin{ to{ transform:rotate(360deg);} }
+
+  .hero-logo-badge{
+    position:absolute;
+    bottom:-10px;
+    right:-10px;
+    width:74px;
+    height:74px;
+    border-radius:18px;
+    background:var(--bg-plum);
+    border:2px solid var(--bg-void);
+    box-shadow:0 8px 24px rgba(0,0,0,0.45), 0 0 0 1px var(--groove-strong);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+  }
+  .hero-logo-badge img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+  }
 
   h1.headline{
     font-size:clamp(30px, 6vw, 54px);
@@ -285,6 +309,48 @@
     display:flex;align-items:center;justify-content:center;
   }
 
+  /* App preview visual (phone-ish frame with logo/screenshot placeholder) */
+  .app-preview{
+    margin-top:18px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:14px;
+    border-radius:var(--radius-md);
+    background:rgba(243,237,224,0.03);
+    border:1px solid var(--groove-strong);
+  }
+  .app-preview .frame{
+    width:64px;
+    height:64px;
+    flex:none;
+    border-radius:16px;
+    overflow:hidden;
+    background:var(--bg-void);
+    border:1px solid var(--groove-strong);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .app-preview .frame img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+  }
+  .app-preview .txt{
+    font-size:12.5px;
+    color:var(--ink-faint);
+    line-height:1.5;
+  }
+  .app-preview .txt strong{
+    display:block;
+    color:var(--ink-dim);
+    font-family:'Fraunces', serif;
+    font-size:14px;
+    font-weight:600;
+    margin-bottom:2px;
+  }
+
   /* ---------- SETUP (liner notes) ---------- */
   .liner{
     background:var(--bg-plum-2);
@@ -363,7 +429,10 @@
 
 <div class="wrap">
   <nav>
-    <div class="brand"><span class="dot"></span> MCV</div>
+    <div class="brand">
+      <img class="logo-mark" src="./assets/logo.png" alt="MCV logo">
+      MCV
+    </div>
     <div class="lang-toggle" role="group" aria-label="Language">
       <button id="btn-en" class="active" onclick="setLang('en')">EN</button>
       <button id="btn-fr" onclick="setLang('fr')">FR</button>
@@ -387,6 +456,9 @@
         <text x="150" y="163" text-anchor="middle" font-family="Space Mono, monospace" font-size="8" letter-spacing="3" fill="rgba(243,237,224,0.5)">33⅓ RPM</text>
         <circle cx="150" cy="150" r="4" fill="#121114"/>
       </svg>
+      <div class="hero-logo-badge">
+        <img src="./assets/logo.png" alt="MCV app icon">
+      </div>
     </div>
 
     <div>
@@ -471,6 +543,15 @@
         <a class="btn btn-primary" href="./downloads/mcv.apk" download>
           <span data-en>Download the APK</span><span data-fr>Télécharger l'APK</span>
         </a>
+        <div class="app-preview">
+          <div class="frame"><img src="./assets/logo.png" alt="MCV app icon"></div>
+          <div class="txt">
+            <strong data-en>This is what you'll install</strong>
+            <strong data-fr>Voici ce que vous allez installer</strong>
+            <span data-en>The MCV icon that will appear on your home screen.</span>
+            <span data-fr>L'icône MCV qui apparaîtra sur votre écran d'accueil.</span>
+          </div>
+        </div>
         <p class="note" data-en>Android may warn that this app is from outside the Play Store. Allow the install to continue: it's expected for an APK installed directly.</p>
         <p class="note" data-fr>Android peut signaler que l'application vient d'en dehors du Play Store. Autorisez l'installation à continuer, c'est normal pour un APK installé directement.</p>
       </div>
@@ -496,6 +577,15 @@
           <li data-en>Tap <strong>Add</strong>, done</li>
           <li data-fr>Appuyez sur <strong>Ajouter</strong>, c'est fait</li>
         </ol>
+        <div class="app-preview">
+          <div class="frame"><img src="./assets/logo.png" alt="MCV app icon"></div>
+          <div class="txt">
+            <strong data-en>This is what you'll see</strong>
+            <strong data-fr>Voici ce que vous verrez</strong>
+            <span data-en>The MCV icon added to your home screen.</span>
+            <span data-fr>L'icône MCV ajoutée à votre écran d'accueil.</span>
+          </div>
+        </div>
         <p class="note" data-en>On a computer, the same link opens MCV directly in the browser tab, no install needed. It still works well there, but the app is designed and optimized for mobile use.</p>
         <p class="note" data-fr>Sur ordinateur, ce même lien ouvre MCV directement dans l'onglet du navigateur, sans rien installer. Cela fonctionne bien aussi, mais l'application est conçue et pensée pour un usage mobile.</p>
       </div>
