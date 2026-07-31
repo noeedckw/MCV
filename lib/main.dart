@@ -114,11 +114,9 @@ class _AppRootState extends State<AppRoot> {
           brightness: Brightness.dark,
           useMaterial3: true,
         ),
-        home: SplashGate(
-  child: DiscogsSetupScreen(
-    tokenStorageService: _tokenStorageService,
-    onConfigured: () {},
-  ),
+        home: DiscogsSetupScreen(
+  tokenStorageService: _tokenStorageService,
+  onConfigured: () {},
 ),
       ),
     );
