@@ -115,8 +115,11 @@ class _AppRootState extends State<AppRoot> {
           useMaterial3: true,
         ),
         home: SplashGate(
-          child: Builder(builder: (context) => _buildContent()),
-        ),
+  child: DiscogsSetupScreen(
+    tokenStorageService: _tokenStorageService,
+    onConfigured: () {},
+  ),
+),
       ),
     );
   }
