@@ -5,13 +5,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import 'app_logo.dart';
-import 'keyboard_warmup_stub.dart'
-    if (dart.library.js_interop) 'keyboard_warmup_web.dart';
-
-// warmupKeyboard() pointe vers la vraie implémentation JS interop en
-// compilation web, et vers un no-op sur toutes les autres plateformes
-// (natif iOS/Android/desktop) — import conditionnel au niveau fichier,
-// donc pas d'erreur de compilation en dehors du web.
 
 /// Style de fond du splash. Un seul est tiré au hasard à chaque
 /// lancement de l'app, comme les taches de couleur l'étaient déjà —
@@ -51,9 +44,8 @@ const Color _statusBarFadeColor = Color(0xFF000000);
 
 /// Écran affiché au lancement de l'app (utile surtout en PWA standalone
 /// iOS). L'utilisateur tape sur le logo pour "entrer" : ce tap déclenche
-/// une animation de zoom + fade, ET sert de façon invisible à corriger un
-/// bug connu de décalage de clic en mode standalone iOS, en forçant un
-/// vrai cycle clavier au moment de la transition.
+/// une animation de zoom + fade du logo, qui révèle progressivement
+/// l'écran suivant déjà en place derrière.
 ///
 /// Usage dans main.dart :
 ///   home: SplashGate(child: MonEcranPrincipal()),
@@ -72,17 +64,6 @@ class _SplashGateState extends State<SplashGate>
   bool _exiting = false;
   bool _showText = false;
   bool _showChild = false;
-
-  // Empêche _onExitProgress de se déclencher plusieurs fois pendant
-  // qu'on avance vers/au-delà du seuil.
-  bool _warmupTriggered = false;
-
-  // Fraction de progression du zoom (0..1) à partir de laquelle on
-  // fige l'animation pour déclencher le warmup clavier caché derrière
-  // le fondu noir (_curtainOpacity). Doit correspondre exactement à la
-  // fin du segment de montée du fondu dans _curtainOpacity, pour que
-  // l'écran soit déjà à 100% noir au moment où on fige.
-  static const double _warmupTriggerThreshold = 0.88;
 
   late final AnimationController _breatheController;
   late final AnimationController _exitController;
@@ -104,14 +85,6 @@ class _SplashGateState extends State<SplashGate>
   late final Animation<double> _zoomScale;
   late final Animation<double> _exitOpacity;
   late final Animation<double> _glowOpacity;
-
-  // Fondu noir de l'écran entier, piloté par _exitController comme les
-  // autres animations de sortie. Reste à 0 pendant la majeure partie
-  // du zoom, monte en douceur jusqu'à 1.0 pile quand le zoom devient
-  // très grand (segment où on fige l'animation pour le warmup clavier,
-  // voir _onExitProgress), puis redescend à 0 une fois l'animation
-  // reprise, révélant l'écran suivant déjà en place derrière.
-  late final Animation<double> _curtainOpacity;
 
   late final List<_BlurDot> _dots;
   late final _SplashStyle _style;
@@ -286,48 +259,15 @@ class _SplashGateState extends State<SplashGate>
       ),
     ]).animate(_exitController);
 
-    // Segments, en fraction de la valeur totale de _exitController
-    // (donc du temps, puisque la durée est fixe) :
-    // - 0 -> 0.60 : rien, le zoom/fade du logo se déroule normalement.
-    // - 0.60 -> 0.88 : fondu noir progressif, synchronisé avec le
-    //   moment où le logo devient très grand. Se termine à 1.0 pile à
-    //   _warmupTriggerThreshold, où l'animation est figée (voir
-    //   _onExitProgress) -> l'écran est déjà 100% noir au moment où le
-    //   warmup clavier se déclenche derrière.
-    // - 0.88 -> 1.0 : ne joue qu'après la reprise de l'animation post-
-    //   warmup ; fait redescendre le fondu à 0, révélant l'écran
-    //   suivant déjà prêt en dessous.
-    _curtainOpacity = TweenSequence<double>([
-      TweenSequenceItem(tween: ConstantTween(0.0), weight: 60),
-      TweenSequenceItem(
-        tween: Tween(begin: 0.0, end: 1.0).chain(
-          CurveTween(curve: Curves.easeIn),
-        ),
-        weight: 28,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: 1.0, end: 0.0).chain(
-          CurveTween(curve: Curves.easeOut),
-        ),
-        weight: 12,
-      ),
-    ]).animate(_exitController);
-
     _exitController.addStatusListener((status) {
       if (status == AnimationStatus.completed && mounted) {
         setState(() => _entered = true);
       }
     });
-
-    // Surveille la progression du zoom pour déclencher le warmup
-    // clavier une fois l'écran déjà très zoomé/estompé (voir
-    // _onExitProgress), plutôt qu'au tout début de la séquence.
-    _exitController.addListener(_onExitProgress);
   }
 
   @override
   void dispose() {
-    _exitController.removeListener(_onExitProgress);
     _breatheController.dispose();
     _exitController.dispose();
     _textController.dispose();
@@ -344,41 +284,10 @@ class _SplashGateState extends State<SplashGate>
     _backgroundController.stop();
     _vinylRotationController.stop();
 
-    // Le zoom démarre tout de suite, sans délai : il doit jouer
-    // visiblement et en entier avant que quoi que ce soit ne se passe
-    // côté clavier. C'est _onExitProgress qui décide QUAND, plus tard
-    // dans la course, déclencher le warmup.
+    // Zoom + fade du logo jusqu'au bout, en une seule course : l'écran
+    // suivant (déjà monté derrière) apparaît en fondu au fur et à
+    // mesure, sans rideau noir intermédiaire.
     _exitController.forward();
-  }
-
-  // Appelé à chaque tick de _exitController pendant toute la séquence
-  // de sortie. Dès que le zoom atteint _warmupTriggerThreshold, le
-  // fondu noir (_curtainOpacity) est déjà à 1.0 (voir sa TweenSequence)
-  // : l'écran est donc déjà entièrement noir. On fige l'animation à
-  // cet instant précis, on déclenche le warmup clavier (donc le
-  // resize de viewport) pendant que rien n'est visible ni en
-  // mouvement, puis on relance l'animation : elle termine sa course en
-  // ramenant le fondu noir à 0, révélant l'écran suivant déjà en place
-  // derrière.
-  void _onExitProgress() {
-    if (_warmupTriggered) return;
-    if (_exitController.value < _warmupTriggerThreshold) return;
-
-    _warmupTriggered = true;
-    _exitController.stop();
-
-    try {
-      warmupKeyboard();
-    } catch (_) {}
-
-    // Le temps que le cycle focus/blur se termine ET que le viewport
-    // iOS se re-stabilise (le blur() seul ne suffit pas, l'animation
-    // native de fermeture du clavier prend encore ~250-300ms après
-    // coup) avant de relancer l'animation.
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (!mounted) return;
-      _exitController.forward();
-    });
   }
 
   Widget _buildBlurDots(double width, double height) {
@@ -780,32 +689,6 @@ class _SplashGateState extends State<SplashGate>
                           // Stack = toujours au-dessus de tout le reste
                           // quand présent.
                           if (kIsWeb) _buildStatusBarFade(context),
-
-                          // Fondu noir de l'écran entier, monte en
-                          // douceur en même temps que le logo devient
-                          // très grand, reste plein pendant que
-                          // l'animation est figée pour le warmup
-                          // clavier iOS (voir _onExitProgress), puis
-                          // redescend en douceur en révélant l'écran
-                          // suivant. Toujours en tout dernier dans le
-                          // Stack = toujours au-dessus de tout le
-                          // reste, y compris le fade status bar.
-                          IgnorePointer(
-                            child: AnimatedBuilder(
-                              animation: _exitController,
-                              builder: (context, _) {
-                                if (!_exiting) {
-                                  return const SizedBox.shrink();
-                                }
-                                return Opacity(
-                                  opacity: _curtainOpacity.value,
-                                  child: const ColoredBox(
-                                    color: Colors.black,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
                         ],
                       ),
                     );
