@@ -215,21 +215,29 @@ class _SplashGateState extends State<SplashGate>
         ),
         weight: 12,
       ),
-      TweenSequenceItem(tween: ConstantTween(0.88), weight: 3),
-      TweenSequenceItem(tween: ConstantTween(1.0), weight: 85),
+      // Avant : pause à 0.88 puis saut brut à 1.0 -> discontinuité de
+      // valeur. Remplacé par un vrai retour progressif, easeInOut pour une
+      // dérivée nulle aux deux bouts (raccord fluide avec le press qui
+      // précède ET avec le zoom qui suit).
+      TweenSequenceItem(
+        tween: Tween(begin: 0.88, end: 1.0).chain(
+          CurveTween(curve: Curves.easeInOut),
+        ),
+        weight: 18,
+      ),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 70),
     ]).animate(_exitController);
 
     _zoomScale = TweenSequence<double>([
-      TweenSequenceItem(tween: ConstantTween(1.0), weight: 15),
+      // Poids aligné sur la fin du press-release ci-dessus (12+18=30) :
+      // le zoom ne démarre qu'une fois le logo revenu net à sa taille
+      // normale, au lieu de chevaucher visiblement les deux mouvements.
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 30),
       TweenSequenceItem(
-        // Scale max réduit (22 -> 12) et courbe easeInCubic (au lieu
-        // de easeInExpo) : mouvement toujours rapide et dramatique,
-        // mais réparti plus régulièrement sur la durée -> beaucoup
-        // moins coûteux à rendre frame par frame, donc plus fluide.
         tween: Tween(begin: 1.0, end: 12.0).chain(
           CurveTween(curve: Curves.easeInCubic),
         ),
-        weight: 85,
+        weight: 70,
       ),
     ]).animate(_exitController);
 
@@ -417,32 +425,42 @@ class _SplashGateState extends State<SplashGate>
     final solidHeight = math.max(topInset, math.max(screenHeight * 0.004, 6.0));
     // Fondu allongé pour un dégradé smooth et bien visible, sans pour
     // autant reprendre toute la hauteur testée précédemment.
-    final fadeLength = math.max((screenHeight * 0.12), 0.0);
-    const bandCount = 60;
-    final bandHeight = fadeLength / bandCount;
+    // remplace le bloc fadeLength / bandCount / boucle par :
 
-    final bands = <Widget>[];
-    for (int i = 0; i < bandCount; i++) {
-      final t = i / bandCount; // 0..1 le long du fondu
-      // Courbe linéaire simple : sur une zone de fondu aussi courte
-      // (7% de l'écran), une courbe qui reste opaque longtemps avant
-      // de chuter donnait l'impression d'un bloc noir qui coupe net.
-      // Le linéaire répartit la baisse d'opacité uniformément sur
-      // toute la zone -> fondu visible du début à la fin.
-      final opacity = (1 - t).clamp(0.0, 1.0);
+// Zone réduite (0.12 -> 0.09) : avec smootherstep, le fondu reste
+// perçu comme très smooth même sur une zone plus courte — l'ancienne
+// courbe linéaire avait besoin de plus d'espace pour "cacher" sa
+// cassure.
+final fadeLength = math.max((screenHeight * 0.09), 0.0);
+// 60 -> 120 : ce fondu n'est reconstruit qu'au setState (pas à chaque
+// frame d'animation), donc le coût est négligeable. Plus de bandes =
+// moins de "marches" visibles entre alphas successifs.
+const bandCount = 120;
+final bandHeight = fadeLength / bandCount;
 
-      bands.add(
-        Positioned(
-          top: solidHeight + i * bandHeight,
-          left: 0,
-          right: 0,
-          height: bandHeight + 0.5, // léger overlap anti-liseré
-          child: ColoredBox(
-            color: _statusBarFadeColor.withValues(alpha: opacity),
-          ),
+final bands = <Widget>[];
+  for (int i = 0; i < bandCount; i++) {
+    final t = i / bandCount; // 0..1 le long du fondu
+
+    // Smootherstep au lieu d'un fondu linéaire : dérivée nulle aux deux
+    // bouts -> raccord "à plat" avec la bande opaque du dessus ET avec
+    // la transparence totale du dessous. C'est ça qui supprime la
+    // cassure, pas juste plus de bandes.
+    final smoothT = t * t * t * (t * (t * 6 - 15) + 10);
+    final opacity = (1 - smoothT).clamp(0.0, 1.0);
+
+    bands.add(
+      Positioned(
+        top: solidHeight + i * bandHeight,
+        left: 0,
+        right: 0,
+        height: bandHeight + 0.5,
+        child: ColoredBox(
+          color: _statusBarFadeColor.withValues(alpha: opacity),
         ),
-      );
-    }
+      ),
+    );
+  }
 
     return IgnorePointer(
       child: Stack(
@@ -605,7 +623,7 @@ class _SplashGateState extends State<SplashGate>
                                           opacity: opacity,
                                           child: Transform.scale(
                                             scale: scale,
-                                            filterQuality: FilterQuality.low,
+                                            filterQuality: FilterQuality.high,
                                             child: child,
                                           ),
                                         );
