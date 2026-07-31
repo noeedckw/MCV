@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import 'app_logo.dart';
@@ -287,6 +288,10 @@ class _SplashGateState extends State<SplashGate>
     if (_exiting) return;
     setState(() => _exiting = true);
 
+    _breatheController.stop();
+    _backgroundController.stop();
+    _vinylRotationController.stop();
+
     // Le warmup doit être appelé ici, dans le handler de tap lui-même,
     // pour rester dans la fenêtre de "vrai geste utilisateur" qu'iOS
     // exige pour autoriser l'ouverture du clavier.
@@ -294,10 +299,19 @@ class _SplashGateState extends State<SplashGate>
       warmupKeyboard();
     } catch (_) {}
 
-    _breatheController.stop();
-    _backgroundController.stop();
-    _vinylRotationController.stop();
-    _exitController.forward();
+    // On laisse le temps au cycle focus/blur de se terminer ET au
+    // viewport iOS de se re-stabiliser avant de démarrer le zoom : le
+    // blur() du warmup ne suffit pas à lui seul, l'animation native de
+    // fermeture du clavier prend encore ~250-300ms après coup. Si le
+    // zoom démarrait tout de suite, il jouerait pendant que le canvas
+    // Flutter change de taille sous lui (viewport qui se redimensionne
+    // pour laisser la place au clavier) -> effet de saut en PWA
+    // standalone iOS. Ce délai n'a aucun impact perceptible côté
+    // ressenti utilisateur, vu qu'il vient de taper.
+    Future.delayed(const Duration(milliseconds: 320), () {
+      if (!mounted) return;
+      _exitController.forward();
+    });
   }
 
   Widget _buildBlurDots(double width, double height) {
@@ -398,6 +412,11 @@ class _SplashGateState extends State<SplashGate>
   /// logo, texte), fixe pendant toute la séquence (respiration comme
   /// sortie), et transparent aux taps pour ne jamais gêner le
   /// "tap to enter".
+  ///
+  /// N'est appelé QUE sur web (voir kIsWeb dans build()) : ce raccord
+  /// n'a de sens que pour la PWA standalone iOS, il ne sert à rien sur
+  /// app native Android/iOS où il n'y a pas de status bar web à
+  /// matcher.
   ///
   /// IMPORTANT : implémenté avec un empilement de bandes pleines
   /// (Container + alpha), PAS avec un LinearGradient/shader. Un
@@ -687,9 +706,13 @@ class _SplashGateState extends State<SplashGate>
                           ),
 
                           // Fondu noir en haut d'écran, pour matcher la
-                          // status bar native. Toujours en dernier =
-                          // toujours au-dessus de tout le reste.
-                          _buildStatusBarFade(context),
+                          // status bar native. Uniquement sur web (PWA
+                          // iOS notamment) : inutile sur app native
+                          // Android/iOS, il n'y a pas de status bar web
+                          // à raccorder. Toujours en dernier dans le
+                          // Stack = toujours au-dessus de tout le reste
+                          // quand présent.
+                          if (kIsWeb) _buildStatusBarFade(context),
                         ],
                       ),
                     );
