@@ -116,6 +116,17 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
   /// l'exception à FlutterError.onError, sauf si on lui passe un callback
   /// onError explicite. Un simple try/catch autour de l'await ne détecte
   /// donc rien : il faut piloter l'échec via ce callback.
+  ///
+  /// IMPORTANT #2 : precacheImage() n'a AUCUN timeout intégré. Sans borne
+  /// de temps, une seule requête réseau lente (typiquement juste après le
+  /// lancement de l'app, connexion pas encore stabilisée) peut rester en
+  /// attente indéfiniment — et comme _loadShowcase() attend TOUTES les
+  /// covers via Future.wait, ça bloque l'écran entier en chargement pour
+  /// toujours. D'où le `.timeout(...)` ci-dessous : une image trop lente
+  /// est traitée comme un échec normal (→ retry, puis exclusion), jamais
+  /// comme un blocage.
+  static const Duration _kImageTimeout = Duration(seconds: 6);
+
   Future<bool> _isImageLoadable(String url, {int maxAttempts = 3}) async {
     final resolved = resolveCoverUrl(url);
     if (resolved == null) return false;
@@ -131,6 +142,13 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
           onError: (exception, stackTrace) {
             // Callback fiable, contrairement au Future qui se complète
             // "avec succès" même quand l'image n'a pas pu être chargée.
+            failed = true;
+          },
+        ).timeout(
+          _kImageTimeout,
+          onTimeout: () {
+            // Requête trop lente : on la traite comme un échec plutôt
+            // que de laisser Future.wait attendre indéfiniment.
             failed = true;
           },
         );
