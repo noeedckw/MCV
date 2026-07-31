@@ -7,50 +7,21 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
 
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="mcv">
-  <link rel="apple-touch-icon" href="icons/mcv_logo.png">
 
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>My Collection of Vinyl</title>
-  <link rel="manifest" href="manifest.json">
+  <title>mcv</title>
 
-  <style>
-    html, body {
-      background-color: #000000;
-      height: 100%;
-      margin: 0;
-    }
-  </style>
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
-  <script>
-    // Fonction exposée à Dart (appelée uniquement depuis un vrai tap
-    // utilisateur, via l'écran de démarrage Flutter). Force un vrai
-    // cycle ouverture/fermeture du clavier iOS, ce qui corrige le
-    // décalage de hit-test propre au mode PWA standalone.
-    window.mcvWarmupKeyboard = function () {
-      var hiddenInput = document.createElement('input');
-      hiddenInput.setAttribute('type', 'text');
-      hiddenInput.setAttribute(
-        'style',
-        'position:fixed; top:-1000px; left:-1000px; opacity:0; height:1px; width:1px; pointer-events:none;'
-      );
-      document.body.appendChild(hiddenInput);
-      hiddenInput.focus();
-
-      setTimeout(function () {
-        hiddenInput.blur();
-        document.body.removeChild(hiddenInput);
-      }, 50);
-    };
-  </script>
-
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
