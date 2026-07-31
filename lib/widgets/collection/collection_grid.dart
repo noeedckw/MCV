@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../storage/grid_columns_store.dart';
 import '../../storage/vinyl_entry.dart';
 import '../explorer/explorer_results_grid.dart' show GridFormatStyle;
 import 'cards/collection_result_card.dart';
@@ -12,7 +12,7 @@ import 'cards/collection_result_card.dart';
 ///
 /// [collectionKey] identifies which list this grid belongs to (e.g.
 /// `'collection'` or `'wantlist'`) so each keeps its own persisted column
-/// count in `SharedPreferences`, independent of the other.
+/// count, independent of the other, via [GridColumnsStore].
 ///
 /// Pure presentation: it just lays out [entries]. Deciding whether to show
 /// this or `CollectionEmptyState` is `CollectionContainer`'s job.
@@ -39,16 +39,17 @@ class _CollectionGridState extends State<CollectionGrid> {
   static const int _maxColumns = 4;
   static const int _defaultColumns = 2;
 
-  int _crossAxisCount = _defaultColumns;
-  int _baseCrossAxisCount = _defaultColumns;
-  bool _loadedFromPrefs = false;
-
-  String get _prefsKey => 'grid_columns_${widget.collectionKey}';
+  late int _crossAxisCount;
+  late int _baseCrossAxisCount;
 
   @override
   void initState() {
     super.initState();
-    _restoreColumnCount();
+    // Lecture SYNCHRONE du cache — dispo immédiatement, même si ce State
+    // vient d'être recréé après un switch de vue. Plus de flash, plus de
+    // SizedBox.shrink() à attendre.
+    _crossAxisCount = _restoreColumnCount();
+    _baseCrossAxisCount = _crossAxisCount;
   }
 
   @override
@@ -57,29 +58,19 @@ class _CollectionGridState extends State<CollectionGrid> {
     // If the same widget instance gets reused for a different list
     // (e.g. key changes), reload the right saved value.
     if (oldWidget.collectionKey != widget.collectionKey) {
-      _loadedFromPrefs = false;
-      _restoreColumnCount();
-    }
-  }
-
-  Future<void> _restoreColumnCount() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getInt(_prefsKey);
-    if (!mounted) return;
-    if (saved != null && saved >= _minColumns && saved <= _maxColumns) {
       setState(() {
-        _crossAxisCount = saved;
-        _baseCrossAxisCount = saved;
-        _loadedFromPrefs = true;
+        _crossAxisCount = _restoreColumnCount();
+        _baseCrossAxisCount = _crossAxisCount;
       });
-    } else {
-      _loadedFromPrefs = true;
     }
   }
 
-  Future<void> _persistColumnCount(int columns) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_prefsKey, columns);
+  int _restoreColumnCount() {
+    final saved = GridColumnsStore.get(widget.collectionKey);
+    if (saved != null && saved >= _minColumns && saved <= _maxColumns) {
+      return saved;
+    }
+    return _defaultColumns;
   }
 
   void _onScaleUpdate(ScaleUpdateDetails details) {
@@ -95,7 +86,7 @@ class _CollectionGridState extends State<CollectionGrid> {
 
   void _onScaleEnd(ScaleEndDetails details) {
     // Save once the gesture settles, not on every frame of the pinch.
-    _persistColumnCount(_crossAxisCount);
+    GridColumnsStore.set(widget.collectionKey, _crossAxisCount);
   }
 
   // Same scale table as ExplorerResultsGrid, so switching tabs doesn't feel
@@ -197,12 +188,6 @@ class _CollectionGridState extends State<CollectionGrid> {
   @override
   Widget build(BuildContext context) {
     final bottomSafeArea = MediaQuery.of(context).viewPadding.bottom;
-
-    // Avoid a one-frame flash at the default column count before the
-    // saved value comes back from SharedPreferences.
-    if (!_loadedFromPrefs) {
-      return const SizedBox.shrink();
-    }
 
     return LayoutBuilder(
       builder: (context, constraints) {

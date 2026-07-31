@@ -422,45 +422,48 @@ class _SplashGateState extends State<SplashGate>
     final screenHeight = MediaQuery.of(context).size.height;
     // Zone 100% opaque minuscule : juste de quoi matcher la status
     // bar, sans occuper d'espace visible en soi.
-    final solidHeight = math.max(topInset, math.max(screenHeight * 0.004, 6.0));
+    // Plus de plancher artificiel (0.004 * screenHeight) : seul topInset
+    // reste garanti dur, le reste appartient au dégradé -> le noir plein
+    // "dur" est réduit au strict minimum, tout le reste est progressif.
+    final solidHeight = math.max(topInset, 6.0);
     // Fondu allongé pour un dégradé smooth et bien visible, sans pour
     // autant reprendre toute la hauteur testée précédemment.
     // remplace le bloc fadeLength / bandCount / boucle par :
 
-// Zone réduite (0.12 -> 0.09) : avec smootherstep, le fondu reste
-// perçu comme très smooth même sur une zone plus courte — l'ancienne
-// courbe linéaire avait besoin de plus d'espace pour "cacher" sa
-// cassure.
-final fadeLength = math.max((screenHeight * 0.09), 0.0);
-// 60 -> 120 : ce fondu n'est reconstruit qu'au setState (pas à chaque
-// frame d'animation), donc le coût est négligeable. Plus de bandes =
-// moins de "marches" visibles entre alphas successifs.
-const bandCount = 120;
-final bandHeight = fadeLength / bandCount;
+    // Zone réduite (0.12 -> 0.09) : avec smootherstep, le fondu reste
+    // perçu comme très smooth même sur une zone plus courte — l'ancienne
+    // courbe linéaire avait besoin de plus d'espace pour "cacher" sa
+    // cassure.
+    final fadeLength = math.max((screenHeight * 0.16), 0.0);
+    // 60 -> 120 : ce fondu n'est reconstruit qu'au setState (pas à chaque
+    // frame d'animation), donc le coût est négligeable. Plus de bandes =
+    // moins de "marches" visibles entre alphas successifs.
+    const bandCount = 120;
+    final bandHeight = fadeLength / bandCount;
 
-final bands = <Widget>[];
-  for (int i = 0; i < bandCount; i++) {
-    final t = i / bandCount; // 0..1 le long du fondu
+    final bands = <Widget>[];
+      for (int i = 0; i < bandCount; i++) {
+        final t = i / bandCount; // 0..1 le long du fondu
 
-    // Smootherstep au lieu d'un fondu linéaire : dérivée nulle aux deux
-    // bouts -> raccord "à plat" avec la bande opaque du dessus ET avec
-    // la transparence totale du dessous. C'est ça qui supprime la
-    // cassure, pas juste plus de bandes.
-    final smoothT = t * t * t * (t * (t * 6 - 15) + 10);
-    final opacity = (1 - smoothT).clamp(0.0, 1.0);
+        // Smootherstep au lieu d'un fondu linéaire : dérivée nulle aux deux
+        // bouts -> raccord "à plat" avec la bande opaque du dessus ET avec
+        // la transparence totale du dessous. C'est ça qui supprime la
+        // cassure, pas juste plus de bandes.
+        final smoothT = t * t * t * (t * (t * 6 - 15) + 10);
+        final opacity = (1 - smoothT).clamp(0.0, 1.0);
 
-    bands.add(
-      Positioned(
-        top: solidHeight + i * bandHeight,
-        left: 0,
-        right: 0,
-        height: bandHeight + 0.5,
-        child: ColoredBox(
-          color: _statusBarFadeColor.withValues(alpha: opacity),
-        ),
-      ),
-    );
-  }
+        bands.add(
+          Positioned(
+            top: solidHeight + i * bandHeight,
+            left: 0,
+            right: 0,
+            height: bandHeight + 0.5,
+            child: ColoredBox(
+              color: _statusBarFadeColor.withValues(alpha: opacity),
+            ),
+          ),
+        );
+      }
 
     return IgnorePointer(
       child: Stack(
