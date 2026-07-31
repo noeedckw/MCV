@@ -42,6 +42,12 @@ class _BlurDot {
 /// désaccord de teinte entre les deux si elle change un jour.
 const Color _splashBackgroundColor = Color(0xFF0A0910);
 
+/// Couleur du fondu en haut d'écran, VOLONTAIREMENT du noir pur et non
+/// _splashBackgroundColor : la status bar iOS est toujours noire pure,
+/// donc le raccord doit matcher #000000 exactement, pas la teinte
+/// légèrement violette du reste du splash.
+const Color _statusBarFadeColor = Color(0xFF000000);
+
 /// Écran affiché au lancement de l'app (utile surtout en PWA standalone
 /// iOS). L'utilisateur tape sur le logo pour "entrer" : ce tap déclenche
 /// une animation de zoom + fade, ET sert de façon invisible à corriger un
@@ -199,10 +205,14 @@ class _SplashGateState extends State<SplashGate>
     });
 
     // Séquence de sortie au tap : léger "press", puis zoom massif vers
-    // le spectateur pendant que tout s'estompe.
+    // le spectateur pendant que tout s'estompe. Durée légèrement
+    // allongée (750ms -> 900ms) et courbe moins extrême que
+    // easeInExpo : easeInExpo concentre presque tout le mouvement sur
+    // les toutes dernières frames, ce qui demande un rendu très lourd
+    // sur très peu de temps -> perçu comme saccadé sur mobile.
     _exitController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 750),
+      duration: const Duration(milliseconds: 900),
     );
 
     _pressScale = TweenSequence<double>([
@@ -219,8 +229,12 @@ class _SplashGateState extends State<SplashGate>
     _zoomScale = TweenSequence<double>([
       TweenSequenceItem(tween: ConstantTween(1.0), weight: 15),
       TweenSequenceItem(
-        tween: Tween(begin: 1.0, end: 22.0).chain(
-          CurveTween(curve: Curves.easeInExpo),
+        // Scale max réduit (22 -> 12) et courbe easeInCubic (au lieu
+        // de easeInExpo) : mouvement toujours rapide et dramatique,
+        // mais réparti plus régulièrement sur la durée -> beaucoup
+        // moins coûteux à rendre frame par frame, donc plus fluide.
+        tween: Tween(begin: 1.0, end: 12.0).chain(
+          CurveTween(curve: Curves.easeInCubic),
         ),
         weight: 85,
       ),
@@ -403,11 +417,11 @@ class _SplashGateState extends State<SplashGate>
     // appareils/contextes.
     final topInset = MediaQuery.of(context).padding.top;
     final solidHeight = math.max(topInset, 40.0);
-    // Fondu volontairement long, réparti en bandes fines : plus il y a
-    // de bandes, plus la transition paraît lisse à l'œil (comme un
-    // dithering d'opacité), tout en restant de simples rectangles
-    // pleins sans aucun shader.
-    const fadeLength = 260.0;
+    // TEMPORAIRE / TEST : fondu exagéré jusqu'à environ la moitié de
+    // l'écran, pour vérifier qu'il est bien visible sur iPhone/Android
+    // avant de le réduire à une taille définitive plus discrète.
+    final screenHeight = MediaQuery.of(context).size.height;
+    final fadeLength = (screenHeight * 0.5) - solidHeight;
     const bandCount = 40;
     final bandHeight = fadeLength / bandCount;
 
@@ -426,7 +440,7 @@ class _SplashGateState extends State<SplashGate>
           right: 0,
           height: bandHeight + 0.5, // léger overlap anti-liseré
           child: ColoredBox(
-            color: _splashBackgroundColor.withValues(alpha: opacity),
+            color: _statusBarFadeColor.withValues(alpha: opacity),
           ),
         ),
       );
@@ -442,7 +456,7 @@ class _SplashGateState extends State<SplashGate>
             left: 0,
             right: 0,
             height: solidHeight,
-            child: ColoredBox(color: _splashBackgroundColor),
+            child: ColoredBox(color: _statusBarFadeColor),
           ),
           ...bands,
         ],
@@ -593,7 +607,7 @@ class _SplashGateState extends State<SplashGate>
                                           opacity: opacity,
                                           child: Transform.scale(
                                             scale: scale,
-                                            filterQuality: FilterQuality.medium,
+                                            filterQuality: FilterQuality.low,
                                             child: child,
                                           ),
                                         );
