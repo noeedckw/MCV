@@ -102,6 +102,9 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
     super.didUpdateWidget(oldWidget);
 
     if (oldWidget.genreAccent.genre != widget.genreAccent.genre) {
+      // On repart d'un état "pas encore de bandes" pour ce nouveau genre —
+      // sinon les anciennes covers resteraient affichées pendant le fetch.
+      _showBands = false;
       _loadShowcase();
     }
   }
@@ -284,21 +287,6 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
     final gap2 = screenHeight * 0.045;
     final bottomPadding = screenHeight * 0.03;
 
-    if (_isLoading) {
-      return Center(
-        child: CircularProgressIndicator(color: widget.genreAccent.color),
-      );
-    }
-
-    if (_error != null) {
-      return Center(
-        child: Text(
-          "Impossible de charger les vinyles",
-          style: TextStyle(color: Colors.white.withValues(alpha: .6)),
-        ),
-      );
-    }
-
     final accent = widget.genreAccent.color;
 
     return Padding(
@@ -308,6 +296,9 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // La bande du haut reste pilotée par _showBands (collapse à 0
+            // tant que le chargement n'est pas fini) — mais elle n'empêche
+            // plus jamais la carte ci-dessous de s'afficher.
             _animatedBand(
               VinylScrollBand(
                 coverUrls: _bandTop,
@@ -377,9 +368,11 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  "Find vinyls to grow your collection.",
+                                  _error != null
+                                      ? "Certains vinyles n'ont pas pu être chargés."
+                                      : "Find vinyls to grow your collection.",
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: Colors.white54,
                                     fontSize: 13,
                                     height: 1.6,
