@@ -21,4 +21,15 @@ abstract class LocalStorageService {
 
   Future<void> moveToCollection(int discogsId, {int? releaseId});
   Future<void> moveToWantlist(int discogsId, {int? releaseId});
+
+  // --- Favoris ---
+  // Uniquement pour les entrées de la collection (isWantlist == false).
+  // Basé sur l'id local (VinylEntry.id) plutôt que discogsId/releaseId,
+  // puisque le toggle part toujours d'une entrée déjà chargée qui a son id.
+
+  /// Bascule le statut favori d'une entrée de la collection.
+  Future<void> setFavorite(int id, bool isFavorite);
+
+  /// Entrées de la collection marquées favorites.
+  Future<List<VinylEntry>> getAllFavorites();
 }

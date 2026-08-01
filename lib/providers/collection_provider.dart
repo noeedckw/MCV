@@ -11,6 +11,11 @@ class CollectionProvider extends ChangeNotifier {
   List<VinylEntry> vinyls = [];
   String searchQuery = '';
 
+  // Owned-only filter — favorites don't exist on wantlist entries, so this
+  // has no effect when `view == CollectionView.wantlist`; see
+  // filteredVinylsFor below.
+  bool favoritesOnly = false;
+
   CollectionView view = CollectionView.owned;
   CollectionSort sort = CollectionSort.dateAdded;
   bool sortDescending = true; // le plus récent d'abord par défaut
@@ -28,8 +33,6 @@ class CollectionProvider extends ChangeNotifier {
     vinyls = [...owned, ...wantlist];
     notifyListeners();
   }
-
-  
 
   // Best-effort release date extraction for sorting: prefers a full parsed
   // date (when releaseDate holds something like "2011-05-09"), falls back
@@ -59,6 +62,10 @@ class CollectionProvider extends ChangeNotifier {
   // `view`, tout en gardant un seul endroit qui définit le tri.
   List<VinylEntry> filteredVinylsFor(CollectionView targetView) {
     var list = _viewVinylsFor(targetView);
+
+    if (favoritesOnly) {
+      list = list.where((v) => v.isFavorite).toList();
+    }
 
     if (searchQuery.isNotEmpty) {
       final q = searchQuery.toLowerCase();
@@ -138,6 +145,12 @@ class CollectionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setFavoritesOnly(bool value) {
+    if (favoritesOnly == value) return;
+    favoritesOnly = value;
+    notifyListeners();
+  }
+
   void setSearchQuery(String query) {
     searchQuery = query;
     notifyListeners();
@@ -179,6 +192,16 @@ class CollectionProvider extends ChangeNotifier {
       entry.discogsId!,
       releaseId: entry.releaseId,
     );
+    await reload();
+  }
+
+  // Favorites only make sense for owned entries (see VinylEntry.isFavorite
+  // doc + CollectionResultCard/collection_album_detail_modal, both of
+  // which already hide the heart on wantlist items) — no isWantlist guard
+  // needed here since callers only ever wire this up from the owned view.
+  Future<void> toggleFavorite(VinylEntry entry) async {
+    if (entry.id == null) return;
+    await storage.setFavorite(entry.id!, !entry.isFavorite);
     await reload();
   }
 }

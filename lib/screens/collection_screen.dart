@@ -33,6 +33,7 @@ class CollectionScreen extends StatelessWidget {
         }
         if (context.mounted) Navigator.of(context).maybePop();
       },
+      onToggleFavorite: () => provider.toggleFavorite(entry),
     );
   }
 

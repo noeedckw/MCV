@@ -22,12 +22,18 @@ class CollectionResultCard extends StatelessWidget {
   final GridFormatStyle style;
   final VoidCallback onTap;
 
+  /// Favorites are only ever meaningful for owned collection entries, not
+  /// wantlist ones — callers building the wantlist grid should simply not
+  /// pass this, which hides the heart entirely for that tab.
+  final VoidCallback? onToggleFavorite;
+
   const CollectionResultCard({
     super.key,
     required this.entry,
     required this.columns,
     required this.style,
     required this.onTap,
+    this.onToggleFavorite,
   });
 
   @override
@@ -60,6 +66,70 @@ class CollectionResultCard extends StatelessWidget {
       _ => MosaicCard(cover: cover, album: entry.title, style: style),
     };
 
-    return GestureDetector(onTap: onTap, child: content);
+    // Never on wantlist entries, and never when the caller doesn't wire a
+    // handler for it (e.g. explorer-flavoured usages of this same card).
+    final showFavorite = onToggleFavorite != null && !entry.isWantlist;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          content,
+          if (showFavorite)
+            Positioned(
+              top: 6,
+              right: 6,
+              child: _FavoriteBadge(
+                isFavorite: entry.isFavorite,
+                onTap: onToggleFavorite!,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Coeur plein/vide en overlay sur la pochette — tap indépendant du
+/// GestureDetector parent (qui ouvre la modal de détail), donc l'InkWell
+/// capte le tap en premier sans propager l'ouverture de la modal.
+class _FavoriteBadge extends StatelessWidget {
+  final bool isFavorite;
+  final VoidCallback onTap;
+
+  const _FavoriteBadge({required this.isFavorite, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: .40),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 26,
+          height: 26,
+          child: Center(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 160),
+              transitionBuilder: (child, anim) =>
+                  ScaleTransition(scale: anim, child: child),
+              child: Icon(
+                isFavorite
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
+                key: ValueKey(isFavorite),
+                size: 14,
+                color: isFavorite
+                    ? const Color(0xFFFF5C7A)
+                    : Colors.white.withValues(alpha: .85),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

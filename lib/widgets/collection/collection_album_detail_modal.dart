@@ -11,6 +11,7 @@ Future<void> showCollectionAlbumDetail(
   required Widget cover,
   VoidCallback? onRemove,
   VoidCallback? onToggleList,
+  VoidCallback? onToggleFavorite,
 }) {
   return showGeneralDialog(
     context: context,
@@ -23,6 +24,7 @@ Future<void> showCollectionAlbumDetail(
       cover: cover,
       onRemove: onRemove,
       onToggleList: onToggleList,
+      onToggleFavorite: onToggleFavorite,
     ),
     transitionBuilder: (context, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(
@@ -73,21 +75,44 @@ String? _formatLabelValue(dynamic value) {
   return cleaned.isEmpty ? null : cleaned;
 }
 
-class _CollectionAlbumDetailModal extends StatelessWidget {
+class _CollectionAlbumDetailModal extends StatefulWidget {
   final VinylEntry entry;
   final Widget cover;
   final VoidCallback? onRemove;
   final VoidCallback? onToggleList;
+  final VoidCallback? onToggleFavorite;
 
   const _CollectionAlbumDetailModal({
     required this.entry,
     required this.cover,
     required this.onRemove,
     required this.onToggleList,
+    required this.onToggleFavorite,
   });
 
   @override
+  State<_CollectionAlbumDetailModal> createState() =>
+      _CollectionAlbumDetailModalState();
+}
+
+class _CollectionAlbumDetailModalState
+    extends State<_CollectionAlbumDetailModal> {
+  // Optimistic local mirror of the favorite state so the heart flips
+  // instantly on tap instead of waiting on the parent's list refresh /
+  // storage round-trip. The modal itself is short-lived (closed on
+  // backdrop tap), so no need to sync back if the parent ends up
+  // reverting — that scenario isn't expected here.
+  late bool _isFavorite = widget.entry.isFavorite;
+
+  void _handleToggleFavorite() {
+    if (widget.onToggleFavorite == null) return;
+    setState(() => _isFavorite = !_isFavorite);
+    widget.onToggleFavorite!();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final entry = widget.entry;
     // Edition block is always shown, master included — mirrors the
     // large card's wording: "Master Release" when there's no specific
     // release tied to this entry, otherwise whatever format/country/date
@@ -102,6 +127,10 @@ class _CollectionAlbumDetailModal extends StatelessWidget {
               ? versionParts.join(' · ')
               : 'Specific Edition')
         : 'Master Release';
+
+    // Favorites only make sense for collection items, never wantlist ones.
+    final showFavorite =
+        widget.onToggleFavorite != null && !entry.isWantlist;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -138,17 +167,21 @@ class _CollectionAlbumDetailModal extends StatelessWidget {
                             children: [
                               _Content(
                                 entry: entry,
-                                cover: cover,
+                                cover: widget.cover,
                                 versionLabel: versionLabel,
                                 isSpecificEdition: entry.isSpecificEdition,
-                                onRemove: onRemove,
-                                onToggleList: onToggleList,
+                                onRemove: widget.onRemove,
+                                onToggleList: widget.onToggleList,
+                                showFavorite: showFavorite,
+                                isFavorite: _isFavorite,
+                                onToggleFavorite: _handleToggleFavorite,
                               ),
                               Positioned(
                                 top: 10,
                                 right: 10,
                                 child: _CloseButton(
-                                  onTap: () => Navigator.of(context).maybePop(),
+                                  onTap: () =>
+                                      Navigator.of(context).maybePop(),
                                 ),
                               ),
                             ],
@@ -226,6 +259,45 @@ class _CloseButton extends StatelessWidget {
             Icons.close_rounded,
             size: 19,
             color: Colors.white.withValues(alpha: .8),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Bouton carré glass posé à droite du rectangle EDITION. Taille fixe,
+/// centré verticalement — pas de dépendance à la hauteur du rectangle
+/// voisin, donc rien ne casse si l'édition passe sur deux lignes.
+class _EditionFavoriteButton extends StatelessWidget {
+  final bool isFavorite;
+  final VoidCallback onTap;
+
+  const _EditionFavoriteButton({
+    required this.isFavorite,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: .06),
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          width: 34,
+          height: 34,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.white.withValues(alpha: .10)),
+          ),
+          child: Icon(
+            isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+            size: 15,
+            color: Colors.white.withValues(alpha: isFavorite ? .75 : .55),
           ),
         ),
       ),
@@ -564,6 +636,9 @@ class _Content extends StatelessWidget {
   final bool isSpecificEdition;
   final VoidCallback? onRemove;
   final VoidCallback? onToggleList;
+  final bool showFavorite;
+  final bool isFavorite;
+  final VoidCallback onToggleFavorite;
 
   const _Content({
     required this.entry,
@@ -572,6 +647,9 @@ class _Content extends StatelessWidget {
     required this.isSpecificEdition,
     required this.onRemove,
     required this.onToggleList,
+    required this.showFavorite,
+    required this.isFavorite,
+    required this.onToggleFavorite,
   });
 
   @override
@@ -690,23 +768,35 @@ class _Content extends StatelessWidget {
               // to the line below. Generic/master entries get a small
               // (i) icon that explains what that means.
               const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  color: Colors.white.withValues(alpha: .06),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: .10),
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        color: Colors.white.withValues(alpha: .06),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: .10),
+                        ),
+                      ),
+                      child: _EditionSection(
+                        value: versionLabel,
+                        isSpecific: isSpecificEdition,
+                      ),
+                    ),
                   ),
-                ),
-                child: _EditionSection(
-                  value: versionLabel,
-                  isSpecific: isSpecificEdition,
-                ),
+                  if (showFavorite) ...[
+                    const SizedBox(width: 8),
+                    _EditionFavoriteButton(
+                      isFavorite: isFavorite,
+                      onTap: onToggleFavorite,
+                    ),
+                  ],
+                ],
               ),
               if (label != null) ...[
                 const SizedBox(height: 10),

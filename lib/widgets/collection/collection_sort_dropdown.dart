@@ -7,7 +7,8 @@ import '../../providers/collection_provider.dart';
 /// right below/right of it (via [CompositedTransformFollower]). Selections
 /// made inside the panel are staged locally and only pushed to the
 /// provider when the panel closes — so you can change sort field *and*
-/// direction in one go instead of the list re-sorting after every tap.
+/// direction (and the favorites filter) in one go instead of the list
+/// re-sorting/re-filtering after every tap.
 class CollectionSortDropdown extends StatefulWidget {
   const CollectionSortDropdown({super.key});
 
@@ -27,6 +28,12 @@ class _CollectionSortDropdownState extends State<CollectionSortDropdown>
   // Staged selection — only committed to the provider when the panel closes.
   late CollectionSort _pendingSort;
   late bool _pendingDescending;
+  late bool _pendingFavoritesOnly;
+
+  // Le filtre favoris n'existe que pour la collection possédée — capturé
+  // à l'ouverture du panneau (la vue ne peut pas changer pendant qu'il
+  // est ouvert, le barrier plein écran bloque les taps sur le switcher).
+  bool _favoritesApplicable = true;
 
   @override
   void dispose() {
@@ -41,6 +48,8 @@ class _CollectionSortDropdownState extends State<CollectionSortDropdown>
     final provider = context.read<CollectionProvider>();
     _pendingSort = provider.sort;
     _pendingDescending = provider.sortDescending;
+    _favoritesApplicable = provider.view == CollectionView.owned;
+    _pendingFavoritesOnly = _favoritesApplicable ? provider.favoritesOnly : false;
 
     _overlayEntry = _buildOverlay();
     Overlay.of(context).insert(_overlayEntry!);
@@ -57,6 +66,11 @@ class _CollectionSortDropdownState extends State<CollectionSortDropdown>
     if (provider.sortDescending != _pendingDescending) {
       provider.toggleSortDirection();
     }
+    // Le toggle favoris n'était ni visible ni éditable sur la wantlist —
+    // on ne touche pas au filtre de la collection dans ce cas.
+    if (_favoritesApplicable && provider.favoritesOnly != _pendingFavoritesOnly) {
+      provider.setFavoritesOnly(_pendingFavoritesOnly);
+    }
 
     await _animController.reverse();
     _removeOverlay();
@@ -71,7 +85,7 @@ class _CollectionSortDropdownState extends State<CollectionSortDropdown>
   OverlayEntry _buildOverlay() {
     final renderBox = context.findRenderObject() as RenderBox;
     final buttonSize = renderBox.size;
-    const panelWidth = 180.0;
+    const panelWidth = 160.0;
 
     return OverlayEntry(
       builder: (overlayContext) {
@@ -112,10 +126,14 @@ class _CollectionSortDropdownState extends State<CollectionSortDropdown>
                           width: panelWidth,
                           selectedSort: _pendingSort,
                           descending: _pendingDescending,
+                          favoritesOnly: _pendingFavoritesOnly,
+                          showFavoritesToggle: _favoritesApplicable,
                           onSortChanged: (s) =>
                               setPanelState(() => _pendingSort = s),
                           onDirectionChanged: (d) =>
                               setPanelState(() => _pendingDescending = d),
+                          onFavoritesOnlyChanged: (v) =>
+                              setPanelState(() => _pendingFavoritesOnly = v),
                         );
                       },
                     ),
@@ -133,6 +151,8 @@ class _CollectionSortDropdownState extends State<CollectionSortDropdown>
   Widget build(BuildContext context) {
     final provider = context.watch<CollectionProvider>();
     final isOpen = _overlayEntry != null;
+    final showFavoritesIndicator =
+        provider.view == CollectionView.owned && provider.favoritesOnly;
     const radius = BorderRadius.all(Radius.circular(12));
 
     return CompositedTransformTarget(
@@ -171,12 +191,31 @@ class _CollectionSortDropdownState extends State<CollectionSortDropdown>
                   child: SizedBox(
                     height: 44,
                     width: 44,
-                    child: Icon(
-                      provider.sortDescending
-                          ? Icons.south_rounded
-                          : Icons.north_rounded,
-                      size: 18,
-                      color: Colors.white.withValues(alpha: .75),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Icon(
+                          provider.sortDescending
+                              ? Icons.south_rounded
+                              : Icons.north_rounded,
+                          size: 18,
+                          color: Colors.white.withValues(alpha: .75),
+                        ),
+                        // Small heart indicating the favorites filter is
+                        // active, so the collapsed button still reflects
+                        // it without needing to open the panel. N'existe
+                        // que pour la collection possédée.
+                        if (showFavoritesIndicator)
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: Icon(
+                              Icons.favorite_rounded,
+                              size: 10,
+                              color: Colors.white.withValues(alpha: .85),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -193,15 +232,21 @@ class _SortDropdownPanel extends StatelessWidget {
   final double width;
   final CollectionSort selectedSort;
   final bool descending;
+  final bool favoritesOnly;
+  final bool showFavoritesToggle;
   final ValueChanged<CollectionSort> onSortChanged;
   final ValueChanged<bool> onDirectionChanged;
+  final ValueChanged<bool> onFavoritesOnlyChanged;
 
   const _SortDropdownPanel({
     required this.width,
     required this.selectedSort,
     required this.descending,
+    required this.favoritesOnly,
+    required this.showFavoritesToggle,
     required this.onSortChanged,
     required this.onDirectionChanged,
+    required this.onFavoritesOnlyChanged,
   });
 
   String _label(CollectionSort s) => switch (s) {
@@ -248,7 +293,7 @@ class _SortDropdownPanel extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+                  padding: const EdgeInsets.fromLTRB(14, 10, 10, 6),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -261,38 +306,20 @@ class _SortDropdownPanel extends StatelessWidget {
                           color: Colors.white.withValues(alpha: .40),
                         ),
                       ),
-                      Material(
-                        type: MaterialType.transparency,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(8),
-                          onTap: () => onDirectionChanged(!descending),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 2,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (showFavoritesToggle)
+                            _FavoritesOnlyToggle(
+                              active: favoritesOnly,
+                              onTap: () =>
+                                  onFavoritesOnlyChanged(!favoritesOnly),
                             ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  descending
-                                      ? Icons.south_rounded
-                                      : Icons.north_rounded,
-                                  size: 14,
-                                  color: Colors.white.withValues(alpha: .75),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  descending ? 'Descending' : 'Ascending',
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white.withValues(alpha: .75),
-                                  ),
-                                ),
-                              ],
-                            ),
+                          _DirectionToggle(
+                            descending: descending,
+                            onTap: () => onDirectionChanged(!descending),
                           ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
@@ -308,6 +335,69 @@ class _SortDropdownPanel extends StatelessWidget {
                 const SizedBox(height: 4),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Petit cœur cliquable — bascule le filtre favoris-uniquement,
+/// indépendamment du champ de tri sélectionné. Gris clair plein quand
+/// actif (pas de rouge, cohérent avec le reste du panneau monochrome).
+/// N'est affiché que pour la collection possédée (pas de favoris sur
+/// la wantlist).
+class _FavoritesOnlyToggle extends StatelessWidget {
+  final bool active;
+  final VoidCallback onTap;
+
+  const _FavoritesOnlyToggle({required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 160),
+            transitionBuilder: (child, anim) =>
+                ScaleTransition(scale: anim, child: child),
+            child: Icon(
+              active ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              key: ValueKey(active),
+              size: 15,
+              color: Colors.white.withValues(alpha: active ? .85 : .40),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DirectionToggle extends StatelessWidget {
+  final bool descending;
+  final VoidCallback onTap;
+
+  const _DirectionToggle({required this.descending, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Icon(
+            descending ? Icons.south_rounded : Icons.north_rounded,
+            size: 16,
+            color: Colors.white.withValues(alpha: .75),
           ),
         ),
       ),

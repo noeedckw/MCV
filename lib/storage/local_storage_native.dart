@@ -40,6 +40,9 @@ class VinylsTable extends Table {
   // --- v5 ---
   TextColumn get tracklist => text().nullable()(); // JSON-encoded List<Map>
   TextColumn get notes => text().nullable()();
+
+  // --- v6 ---
+  BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
 }
 
 @DriftDatabase(tables: [VinylsTable])
@@ -47,7 +50,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -83,6 +86,9 @@ class AppDatabase extends _$AppDatabase {
       if (from < 5) {
         await m.addColumn(vinylsTable, vinylsTable.tracklist);
         await m.addColumn(vinylsTable, vinylsTable.notes);
+      }
+      if (from < 6) {
+        await m.addColumn(vinylsTable, vinylsTable.isFavorite);
       }
     },
   );
@@ -133,6 +139,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
               .toList()
         : null,
     notes: r.notes,
+    isFavorite: r.isFavorite,
   );
 
   @override
@@ -148,6 +155,15 @@ class LocalStorageServiceImpl implements LocalStorageService {
     final rows = await (_db.select(
       _db.vinylsTable,
     )..where((t) => t.isWantlist.equals(true))).get();
+    return rows.map(_toEntry).toList();
+  }
+
+  @override
+  Future<List<VinylEntry>> getAllFavorites() async {
+    final rows = await (_db.select(_db.vinylsTable)..where(
+          (t) => t.isWantlist.equals(false) & t.isFavorite.equals(true),
+        ))
+        .get();
     return rows.map(_toEntry).toList();
   }
 
@@ -190,6 +206,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
                   : null,
             ),
             notes: Value(vinyl.notes),
+            isFavorite: Value(vinyl.isFavorite),
           ),
         );
   }
@@ -293,6 +310,13 @@ class LocalStorageServiceImpl implements LocalStorageService {
                   : t.releaseId.equals(releaseId)),
         ))
         .write(const VinylsTableCompanion(isWantlist: Value(true)));
+  }
+
+  @override
+  Future<void> setFavorite(int id, bool isFavorite) async {
+    await (_db.update(_db.vinylsTable)..where((t) => t.id.equals(id))).write(
+      VinylsTableCompanion(isFavorite: Value(isFavorite)),
+    );
   }
 
   Future<String?> _writeCoverIfNeeded(

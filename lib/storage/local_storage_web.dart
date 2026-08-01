@@ -76,6 +76,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
         ?.map((e) => TrackInfo.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList(),
     notes: value['notes'] as String?,
+    isFavorite: value['isFavorite'] as bool? ?? false,
   );
 
   Future<void> _insert(
@@ -105,6 +106,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
       'styles': vinyl.styles,
       'tracklist': vinyl.tracklist?.map((t) => t.toJson()).toList(),
       'notes': vinyl.notes,
+      'isFavorite': vinyl.isFavorite,
     });
   }
 
@@ -126,6 +128,12 @@ class LocalStorageServiceImpl implements LocalStorageService {
 
   @override
   Future<List<VinylEntry>> getAllWantlist() => _getAll(isWantlist: true);
+
+  @override
+  Future<List<VinylEntry>> getAllFavorites() async {
+    final all = await _getAll(isWantlist: false);
+    return all.where((v) => v.isFavorite).toList();
+  }
 
   @override
   Future<void> insertVinyl(VinylEntry vinyl, {Uint8List? coverImageBytes}) =>
@@ -212,4 +220,19 @@ class LocalStorageServiceImpl implements LocalStorageService {
   @override
   Future<void> moveToWantlist(int discogsId, {int? releaseId}) =>
       _setWantlist(discogsId, true, releaseId: releaseId);
+
+  @override
+  Future<void> setFavorite(int id, bool isFavorite) async {
+    final txn = _db.transaction(_store, 'readwrite');
+    final store = txn.objectStore(_store);
+    await for (final cursor in store.openCursor(autoAdvance: false)) {
+      final value = Map<String, dynamic>.from(cursor.value as Map);
+      if (value['id'] == id) {
+        value['isFavorite'] = isFavorite;
+        await cursor.update(value);
+        break;
+      }
+      cursor.next();
+    }
+  }
 }

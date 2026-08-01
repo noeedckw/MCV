@@ -53,6 +53,11 @@ class VinylEntry {
   /// Notes du master, nettoyées (même logique que la modal Explorer).
   final String? notes;
 
+  /// Favori — uniquement pertinent pour les entrées de la collection
+  /// (isWantlist == false). Coeur plein/vide sur la card + la modal de
+  /// détail.
+  final bool isFavorite;
+
   VinylEntry({
     this.id,
     this.discogsId,
@@ -73,6 +78,7 @@ class VinylEntry {
     this.styles,
     this.tracklist,
     this.notes,
+    this.isFavorite = false,
   }) : dateAdded = dateAdded ?? DateTime.now();
 
   bool get isSpecificEdition => releaseId != null;
@@ -97,6 +103,7 @@ class VinylEntry {
     List<String>? styles,
     List<TrackInfo>? tracklist,
     String? notes,
+    bool? isFavorite,
   }) {
     return VinylEntry(
       id: id ?? this.id,
@@ -118,6 +125,7 @@ class VinylEntry {
       styles: styles ?? this.styles,
       tracklist: tracklist ?? this.tracklist,
       notes: notes ?? this.notes,
+      isFavorite: isFavorite ?? this.isFavorite,
     );
   }
 }

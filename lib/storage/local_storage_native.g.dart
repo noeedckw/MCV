@@ -198,6 +198,21 @@ class $VinylsTableTable extends VinylsTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isFavoriteMeta = const VerificationMeta(
+    'isFavorite',
+  );
+  @override
+  late final GeneratedColumn<bool> isFavorite = GeneratedColumn<bool>(
+    'is_favorite',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_favorite" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -218,6 +233,7 @@ class $VinylsTableTable extends VinylsTable
     styles,
     tracklist,
     notes,
+    isFavorite,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -349,6 +365,12 @@ class $VinylsTableTable extends VinylsTable
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('is_favorite')) {
+      context.handle(
+        _isFavoriteMeta,
+        isFavorite.isAcceptableOrUnknown(data['is_favorite']!, _isFavoriteMeta),
+      );
+    }
     return context;
   }
 
@@ -430,6 +452,10 @@ class $VinylsTableTable extends VinylsTable
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      isFavorite: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_favorite'],
+      )!,
     );
   }
 
@@ -458,6 +484,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
   final String? styles;
   final String? tracklist;
   final String? notes;
+  final bool isFavorite;
   const VinylsTableData({
     required this.id,
     this.discogsId,
@@ -477,6 +504,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
     this.styles,
     this.tracklist,
     this.notes,
+    required this.isFavorite,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -525,6 +553,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
+    map['is_favorite'] = Variable<bool>(isFavorite);
     return map;
   }
 
@@ -572,6 +601,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      isFavorite: Value(isFavorite),
     );
   }
 
@@ -599,6 +629,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
       styles: serializer.fromJson<String?>(json['styles']),
       tracklist: serializer.fromJson<String?>(json['tracklist']),
       notes: serializer.fromJson<String?>(json['notes']),
+      isFavorite: serializer.fromJson<bool>(json['isFavorite']),
     );
   }
   @override
@@ -623,6 +654,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
       'styles': serializer.toJson<String?>(styles),
       'tracklist': serializer.toJson<String?>(tracklist),
       'notes': serializer.toJson<String?>(notes),
+      'isFavorite': serializer.toJson<bool>(isFavorite),
     };
   }
 
@@ -645,6 +677,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
     Value<String?> styles = const Value.absent(),
     Value<String?> tracklist = const Value.absent(),
     Value<String?> notes = const Value.absent(),
+    bool? isFavorite,
   }) => VinylsTableData(
     id: id ?? this.id,
     discogsId: discogsId.present ? discogsId.value : this.discogsId,
@@ -668,6 +701,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
     styles: styles.present ? styles.value : this.styles,
     tracklist: tracklist.present ? tracklist.value : this.tracklist,
     notes: notes.present ? notes.value : this.notes,
+    isFavorite: isFavorite ?? this.isFavorite,
   );
   VinylsTableData copyWithCompanion(VinylsTableCompanion data) {
     return VinylsTableData(
@@ -697,6 +731,9 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
       styles: data.styles.present ? data.styles.value : this.styles,
       tracklist: data.tracklist.present ? data.tracklist.value : this.tracklist,
       notes: data.notes.present ? data.notes.value : this.notes,
+      isFavorite: data.isFavorite.present
+          ? data.isFavorite.value
+          : this.isFavorite,
     );
   }
 
@@ -720,7 +757,8 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
           ..write('genres: $genres, ')
           ..write('styles: $styles, ')
           ..write('tracklist: $tracklist, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('isFavorite: $isFavorite')
           ..write(')'))
         .toString();
   }
@@ -745,6 +783,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
     styles,
     tracklist,
     notes,
+    isFavorite,
   );
   @override
   bool operator ==(Object other) =>
@@ -767,7 +806,8 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
           other.genres == this.genres &&
           other.styles == this.styles &&
           other.tracklist == this.tracklist &&
-          other.notes == this.notes);
+          other.notes == this.notes &&
+          other.isFavorite == this.isFavorite);
 }
 
 class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
@@ -789,6 +829,7 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
   final Value<String?> styles;
   final Value<String?> tracklist;
   final Value<String?> notes;
+  final Value<bool> isFavorite;
   const VinylsTableCompanion({
     this.id = const Value.absent(),
     this.discogsId = const Value.absent(),
@@ -808,6 +849,7 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
     this.styles = const Value.absent(),
     this.tracklist = const Value.absent(),
     this.notes = const Value.absent(),
+    this.isFavorite = const Value.absent(),
   });
   VinylsTableCompanion.insert({
     this.id = const Value.absent(),
@@ -828,6 +870,7 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
     this.styles = const Value.absent(),
     this.tracklist = const Value.absent(),
     this.notes = const Value.absent(),
+    this.isFavorite = const Value.absent(),
   }) : artist = Value(artist),
        title = Value(title);
   static Insertable<VinylsTableData> custom({
@@ -849,6 +892,7 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
     Expression<String>? styles,
     Expression<String>? tracklist,
     Expression<String>? notes,
+    Expression<bool>? isFavorite,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -869,6 +913,7 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
       if (styles != null) 'styles': styles,
       if (tracklist != null) 'tracklist': tracklist,
       if (notes != null) 'notes': notes,
+      if (isFavorite != null) 'is_favorite': isFavorite,
     });
   }
 
@@ -891,6 +936,7 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
     Value<String?>? styles,
     Value<String?>? tracklist,
     Value<String?>? notes,
+    Value<bool>? isFavorite,
   }) {
     return VinylsTableCompanion(
       id: id ?? this.id,
@@ -911,6 +957,7 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
       styles: styles ?? this.styles,
       tracklist: tracklist ?? this.tracklist,
       notes: notes ?? this.notes,
+      isFavorite: isFavorite ?? this.isFavorite,
     );
   }
 
@@ -971,6 +1018,9 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (isFavorite.present) {
+      map['is_favorite'] = Variable<bool>(isFavorite.value);
+    }
     return map;
   }
 
@@ -994,7 +1044,8 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
           ..write('genres: $genres, ')
           ..write('styles: $styles, ')
           ..write('tracklist: $tracklist, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('isFavorite: $isFavorite')
           ..write(')'))
         .toString();
   }
@@ -1031,6 +1082,7 @@ typedef $$VinylsTableTableCreateCompanionBuilder =
       Value<String?> styles,
       Value<String?> tracklist,
       Value<String?> notes,
+      Value<bool> isFavorite,
     });
 typedef $$VinylsTableTableUpdateCompanionBuilder =
     VinylsTableCompanion Function({
@@ -1052,6 +1104,7 @@ typedef $$VinylsTableTableUpdateCompanionBuilder =
       Value<String?> styles,
       Value<String?> tracklist,
       Value<String?> notes,
+      Value<bool> isFavorite,
     });
 
 class $$VinylsTableTableFilterComposer
@@ -1150,6 +1203,11 @@ class $$VinylsTableTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isFavorite => $composableBuilder(
+    column: $table.isFavorite,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1252,6 +1310,11 @@ class $$VinylsTableTableOrderingComposer
     column: $table.notes,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isFavorite => $composableBuilder(
+    column: $table.isFavorite,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VinylsTableTableAnnotationComposer
@@ -1324,6 +1387,11 @@ class $$VinylsTableTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<bool> get isFavorite => $composableBuilder(
+    column: $table.isFavorite,
+    builder: (column) => column,
+  );
 }
 
 class $$VinylsTableTableTableManager
@@ -1375,6 +1443,7 @@ class $$VinylsTableTableTableManager
                 Value<String?> styles = const Value.absent(),
                 Value<String?> tracklist = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> isFavorite = const Value.absent(),
               }) => VinylsTableCompanion(
                 id: id,
                 discogsId: discogsId,
@@ -1394,6 +1463,7 @@ class $$VinylsTableTableTableManager
                 styles: styles,
                 tracklist: tracklist,
                 notes: notes,
+                isFavorite: isFavorite,
               ),
           createCompanionCallback:
               ({
@@ -1415,6 +1485,7 @@ class $$VinylsTableTableTableManager
                 Value<String?> styles = const Value.absent(),
                 Value<String?> tracklist = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> isFavorite = const Value.absent(),
               }) => VinylsTableCompanion.insert(
                 id: id,
                 discogsId: discogsId,
@@ -1434,6 +1505,7 @@ class $$VinylsTableTableTableManager
                 styles: styles,
                 tracklist: tracklist,
                 notes: notes,
+                isFavorite: isFavorite,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
