@@ -132,7 +132,11 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
 
   Future<void> _openDiscogsSettings() async {
     final uri = Uri.parse('https://www.discogs.com/settings/developers');
-    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final opened = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+      webOnlyWindowName: '_blank',
+    );
     if (!opened && mounted) {
       setState(() => _errorMessage = _s(
             "Couldn't open the browser.",
