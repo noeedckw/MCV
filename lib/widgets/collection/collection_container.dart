@@ -34,10 +34,10 @@ class _CollectionContainerState extends State<CollectionContainer> {
   bool _emptyImagesPrecached = false;
 
   static const _emptyStateAssets = [
-    "assets/images/empty_collection_vinyl.png",
-    "assets/images/empty_wantlist_vinyl.png",
-    "assets/images/no_results_vinyl_1.png",
-    "assets/images/no_results_vinyl_2.png",
+    "assets/images/search/empty_collection_vinyl.png",
+    "assets/images/search/empty_wantlist_vinyl.png",
+    "assets/images/error/no_results_vinyl_1.png",
+    "assets/images/error/no_results_vinyl_2.png",
   ];
 
   @override

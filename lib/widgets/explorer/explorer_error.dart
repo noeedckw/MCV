@@ -85,8 +85,8 @@ class ExplorerErrorState extends StatelessWidget {
           title: "No Internet Connection",
           subtitle: "Check your connection and try again.",
           images: [
-            "assets/images/no_internet_vinyl_1.png",
-            "assets/images/no_internet_vinyl_2.png",
+            "assets/images/error/no_internet_vinyl_1.png",
+            "assets/images/error/no_internet_vinyl_2.png",
           ],
         );
 
@@ -95,8 +95,8 @@ class ExplorerErrorState extends StatelessWidget {
           title: "No Results Found",
           subtitle: "Try searching with different keywords.",
           images: [
-            "assets/images/no_results_vinyl_1.png",
-            "assets/images/no_results_vinyl_2.png",
+            "assets/images/error/no_results_vinyl_1.png",
+            "assets/images/error/no_results_vinyl_2.png",
           ],
         );
     }

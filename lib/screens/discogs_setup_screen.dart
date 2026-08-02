@@ -36,16 +36,16 @@ class _DiscogsSetupScreenState extends State<DiscogsSetupScreen> {
   // Chemins d'image des étapes : avant définis dans OnboardingVisuals
   // (supprimé lors du rework), maintenant ici puisque c'est le seul
   // endroit qui les utilise.
-  static const String _step1Image = 'assets/images/discogs_create_account.png';
+  static const String _step1Image = 'assets/images/setup/discogs_create_account.png';
 
   // Steps 2 et 3 : image différente selon la langue (ex. capture d'écran
   // avec du texte visible dessus). TODO: remplacer ces noms placeholder
   // par les vrais assets et les déclarer dans pubspec.yaml
   // (flutter: assets:) avant de relancer l'app.
-  static const String _step2ImageEn = 'assets/images/generate_token_eng.png';
-  static const String _step2ImageFr = 'assets/images/generate_token_fr.png';
-  static const String _step3ImageEn = 'assets/images/copy_token_eng.jpeg';
-  static const String _step3ImageFr = 'assets/images/copy_token_fr.jpeg';
+  static const String _step2ImageEn = 'assets/images/setup/generate_token_eng.png';
+  static const String _step2ImageFr = 'assets/images/setup/generate_token_fr.png';
+  static const String _step3ImageEn = 'assets/images/setup/copy_token_eng.jpeg';
+  static const String _step3ImageFr = 'assets/images/setup/copy_token_fr.jpeg';
 
   String get _step2Image => _s(_step2ImageEn, _step2ImageFr);
   String get _step3Image => _s(_step3ImageEn, _step3ImageFr);

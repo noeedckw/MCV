@@ -14,7 +14,7 @@ class CoverImage extends StatelessWidget {
 
   static Widget _errorImage() {
     return Image.asset(
-      'assets/images/loading_error.png',
+      'assets/images/error/loading_error.png',
       fit: BoxFit.cover,
     );
   }

@@ -155,7 +155,7 @@ class _CollectionEmptyStateState extends State<CollectionEmptyState> {
           title: "No Records Yet",
           subtitle: "Start collecting by adding your first vinyl.",
           images: [
-            "assets/images/empty_collection_vinyl.png",
+            "assets/images/search/empty_collection_vinyl.png",
           ],
         );
 
@@ -164,7 +164,7 @@ class _CollectionEmptyStateState extends State<CollectionEmptyState> {
           title: "Your Wantlist Is Empty",
           subtitle: "Save albums you'd like to own to see them here.",
           images: [
-            "assets/images/empty_wantlist_vinyl.png",
+            "assets/images/search/empty_wantlist_vinyl.png",
           ],
         );
 
@@ -173,8 +173,8 @@ class _CollectionEmptyStateState extends State<CollectionEmptyState> {
           title: "No Results Found",
           subtitle: "Try searching with different keywords.",
           images: [
-            "assets/images/no_results_vinyl_1.png",
-            "assets/images/no_results_vinyl_2.png",
+            "assets/images/error/no_results_vinyl_1.png",
+            "assets/images/error/no_results_vinyl_2.png",
           ],
         );
     }

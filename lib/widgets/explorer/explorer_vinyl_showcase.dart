@@ -28,10 +28,10 @@ class ExplorerVinylShowcase extends StatefulWidget {
 
 class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
   static const List<String> _kFeaturedImages = [
-    'assets/images/searching_vinyl_1.png',
-    'assets/images/searching_vinyl_2.png',
-    'assets/images/searching_vinyl_3.png',
-    'assets/images/searching_vinyl_4.png',
+    'assets/images/home_page/searching_vinyl_1.png',
+    'assets/images/home_page/searching_vinyl_2.png',
+    'assets/images/home_page/searching_vinyl_3.png',
+    'assets/images/home_page/searching_vinyl_4.png',
   ];
 
   static const double _kTopBandHeight = 95;
