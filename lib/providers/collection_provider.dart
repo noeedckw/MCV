@@ -56,14 +56,15 @@ class CollectionProvider extends ChangeNotifier {
       .where((v) => v.isWantlist == (targetView == CollectionView.wantlist))
       .toList();
 
-  // Même logique de filtre/tri que filteredVinyls, mais pour une vue
-  // explicite plutôt que la vue courante -> permet au PageView d'afficher
-  // les deux pages (owned + wantlist) en parallèle sans dépendre de
-  // `view`, tout en gardant un seul endroit qui définit le tri.
   List<VinylEntry> filteredVinylsFor(CollectionView targetView) {
     var list = _viewVinylsFor(targetView);
 
-    if (favoritesOnly) {
+    // Le filtre favoris n'a de sens que pour la collection possédée — les
+    // entrées wantlist n'ont jamais isFavorite=true (voir toggleFavorite,
+    // jamais câblé depuis la vue wantlist), donc sans ce garde-fou la
+    // wantlist se retrouvait vidée dès que favoritesOnly était actif sur
+    // owned, alors que ce sont deux listes indépendantes dans le PageView.
+    if (favoritesOnly && targetView == CollectionView.owned) {
       list = list.where((v) => v.isFavorite).toList();
     }
 

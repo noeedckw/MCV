@@ -41,7 +41,6 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
 
   late final String _featuredImage;
 
-  bool _isLoading = true;
   bool _showBands = false;
 
   String? _error;
@@ -177,7 +176,6 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
     if (!mounted) return;
 
     setState(() {
-      _isLoading = true;
       _error = null;
     });
 
@@ -209,7 +207,6 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
         if (!mounted || loadId != _loadId) return;
 
         setState(() {
-          _isLoading = false;
           _bandTop = [];
           _bandBottom = [];
         });
@@ -233,7 +230,6 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
 
       if (validCovers.isEmpty) {
         setState(() {
-          _isLoading = false;
           _bandTop = [];
           _bandBottom = [];
         });
@@ -246,7 +242,6 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
         _bandTop = validCovers.sublist(0, splitIndex);
         _bandBottom = validCovers.sublist(splitIndex);
 
-        _isLoading = false;
 
         if (!widget.focusNode.hasFocus &&
             widget.controller.text.trim().isEmpty) {
@@ -258,7 +253,6 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
 
       setState(() {
         _error = e.toString();
-        _isLoading = false;
       });
     }
   }
