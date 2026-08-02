@@ -5,7 +5,7 @@ enum BandDirection { toLeft, toRight }
 
 /// Bande horizontale de covers qui défile en boucle, dans un sens donné.
 class VinylScrollBand extends StatefulWidget {
-  final List<String> coverUrls;
+  final List<Map<String, dynamic>> items;
   final double itemSize;
 
   /// Espacement entre les covers.
@@ -16,13 +16,17 @@ class VinylScrollBand extends StatefulWidget {
 
   final BandDirection direction;
 
+  /// Appelé au tap sur une cover, avec le résultat Discogs complet.
+  final ValueChanged<Map<String, dynamic>>? onTapItem;
+
   const VinylScrollBand({
     super.key,
-    required this.coverUrls,
+    required this.items,
     required this.itemSize,
     this.spacing = 14,
     this.speed = 40,
     this.direction = BandDirection.toLeft,
+    this.onTapItem,
   });
 
   @override
@@ -37,7 +41,7 @@ class _VinylScrollBandState extends State<VinylScrollBand>
   static const _repeatCount = 4;
 
   double get _loopWidth =>
-      widget.coverUrls.length * (widget.itemSize + widget.spacing);
+      widget.items.length * (widget.itemSize + widget.spacing);
 
   @override
   void initState() {
@@ -55,7 +59,7 @@ class _VinylScrollBandState extends State<VinylScrollBand>
   }
 
   void _onTick() {
-    if (!_scrollController.hasClients || widget.coverUrls.isEmpty) return;
+    if (!_scrollController.hasClients || widget.items.isEmpty) return;
 
     final raw = _controller.value * _loopWidth;
 
@@ -73,7 +77,7 @@ class _VinylScrollBandState extends State<VinylScrollBand>
     if (oldWidget.speed != widget.speed ||
         oldWidget.spacing != widget.spacing ||
         oldWidget.itemSize != widget.itemSize ||
-        oldWidget.coverUrls.length != widget.coverUrls.length) {
+        oldWidget.items.length != widget.items.length) {
       _controller
         ..stop()
         ..duration = Duration(
@@ -92,13 +96,13 @@ class _VinylScrollBandState extends State<VinylScrollBand>
 
   @override
   Widget build(BuildContext context) {
-    if (widget.coverUrls.isEmpty) {
+    if (widget.items.isEmpty) {
       return SizedBox(height: widget.itemSize);
     }
 
     final displayList = List.generate(
-      widget.coverUrls.length * _repeatCount,
-      (i) => widget.coverUrls[i % widget.coverUrls.length],
+      widget.items.length * _repeatCount,
+      (i) => widget.items[i % widget.items.length],
     );
 
     return SizedBox(
@@ -109,21 +113,28 @@ class _VinylScrollBandState extends State<VinylScrollBand>
         physics: const NeverScrollableScrollPhysics(),
         itemCount: displayList.length,
         itemBuilder: (context, index) {
-          final url = displayList[index];
+          final item = displayList[index];
+          final url = item['cover_image'] as String;
 
           return Padding(
             padding: EdgeInsets.only(right: widget.spacing),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.network(
-                resolveCoverUrl(url)!,
-                width: widget.itemSize,
-                height: widget.itemSize,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: widget.onTapItem == null
+                    ? null
+                    : () => widget.onTapItem!(item),
+                child: Image.network(
+                  resolveCoverUrl(url)!,
                   width: widget.itemSize,
                   height: widget.itemSize,
-                  color: Colors.white10,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: widget.itemSize,
+                    height: widget.itemSize,
+                    color: Colors.white10,
+                  ),
                 ),
               ),
             ),

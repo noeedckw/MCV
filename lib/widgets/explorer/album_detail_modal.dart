@@ -53,12 +53,15 @@ Future<void> showAlbumDetailModal(
   BuildContext context, {
   required Map<String, dynamic> result,
 }) {
-  final masterId = result['id'] as int;
   final provider = context.read<ExplorerProvider>();
 
-  provider.loadMasterDetail(masterId);
-  provider.loadMasterVersions(masterId);
-  provider.checkCollectionStatus(masterId);
+  // loadDetailForResult résout à lui seul le bon id (master direct, ou
+  // master_id extrait d'une release, ou fallback sur l'id de la release)
+  // et lance checkCollectionStatus dessus une fois résolu — plus besoin
+  // d'appeler loadMasterDetail/loadMasterVersions/checkCollectionStatus
+  // séparément ici, ni de connaître à l'avance si `result` est un master
+  // ou une release.
+  provider.loadDetailForResult(result);
   // Hides the search bar / navbar for as long as this modal is up (see
   // ExplorerScreen and MainNavigationScreen, which watch this flag).
   provider.setDetailModalOpen(true);
@@ -146,6 +149,26 @@ class _AlbumDetailModalState extends State<AlbumDetailModal> {
         : title;
   }
 
+  /// L'id à utiliser pour toute opération de collection/wantlist : celui
+  /// résolu par loadDetailForResult (master direct, ou master_id extrait
+  /// d'une release). Tant qu'il n'est pas encore résolu (fenêtre très
+  /// courte au tout premier frame), on retombe sur l'id brut du résultat —
+  /// en pratique les actions de collection ne sont accessibles qu'une fois
+  /// le detail chargé, donc ce fallback ne devrait jamais être exercé.
+  int get _effectiveId {
+    final resolved = context.read<ExplorerProvider>().effectiveMasterId;
+    return resolved ?? widget.initialResult['id'] as int;
+  }
+
+  /// `widget.initialResult` avec `id` remplacé par l'id résolu — c'est ce
+  /// map qu'il faut passer à toggleCollection/toggleWantlist/
+  /// addToCollection, qui utilisent `result['id']` tel quel comme clé de
+  /// dédup, sans jamais le re-résoudre elles-mêmes.
+  Map<String, dynamic> get _normalizedResult => {
+    ...widget.initialResult,
+    'id': _effectiveId,
+  };
+
   bool _isSameVersion(Map? a, Map b) {
     if (a == null) return false;
     final aid = a['id'];
@@ -157,7 +180,7 @@ class _AlbumDetailModalState extends State<AlbumDetailModal> {
   void _toggleWantlist() {
     HapticFeedback.selectionClick();
     context.read<ExplorerProvider>().toggleWantlist(
-      widget.initialResult,
+      _normalizedResult,
       _selectedVersion,
     );
   }
@@ -180,8 +203,7 @@ class _AlbumDetailModalState extends State<AlbumDetailModal> {
     // Re-check l'état collection/wantlist pour CETTE édition précisément —
     // sinon les boutons gardaient l'état de l'édition précédente (ou du
     // master générique) jusqu'à la prochaine ouverture de la modal.
-    final masterId = widget.initialResult['id'] as int;
-    provider.checkCollectionStatus(masterId, selectedVersion: version);
+    provider.checkCollectionStatus(_effectiveId, selectedVersion: version);
   }
 
   void _toggleVersions() =>
@@ -194,7 +216,7 @@ class _AlbumDetailModalState extends State<AlbumDetailModal> {
   void _toggleCollection() {
     HapticFeedback.mediumImpact();
     context.read<ExplorerProvider>().toggleCollection(
-      widget.initialResult,
+      _normalizedResult,
       _selectedVersion,
     );
   }
@@ -578,10 +600,6 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-/// Small "i" info icon that reveals a short, discreet explanation on tap,
-/// and dismisses itself as soon as the user taps anywhere else.
-/// Small "i" info icon that reveals a short, discreet explanation on tap,
-/// and dismisses itself as soon as the user taps anywhere else.
 /// Small "i" info icon that reveals a short, discreet explanation on tap,
 /// and dismisses itself as soon as the user taps anywhere else.
 class _InfoTooltip extends StatelessWidget {

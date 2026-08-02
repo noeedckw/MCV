@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/explorer_provider.dart';
+import 'album_detail_modal.dart';
 import 'genre_accent.dart';
 import 'vinyl_scroll_band.dart';
 import '../../utils/cover_url.dart';
@@ -45,8 +46,8 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
 
   String? _error;
 
-  List<String> _bandTop = [];
-  List<String> _bandBottom = [];
+  List<Map<String, dynamic>> _bandTop = [];
+  List<Map<String, dynamic>> _bandBottom = [];
 
   // Identifie le chargement "courant". Incrémenté à chaque appel de
   // _loadShowcase(). Si un chargement se termine alors que _loadId a déjà
@@ -190,13 +191,19 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
 
       if (!mounted || loadId != _loadId) return;
 
-      final covers = <String>{
-      for (final r in results)
-        if (r is Map &&
-            (r['cover_image'] as String?)?.isNotEmpty == true &&
-            !(r['cover_image'] as String).toLowerCase().contains('spacer.gif'))
-          r['cover_image'] as String,
-    }.toList()..shuffle(Random());
+      // On garde le Map complet (pas juste l'URL) afin de pouvoir ouvrir
+      // le modal de détail au tap sur une cover.
+      final seenUrls = <String>{};
+      final covers = <Map<String, dynamic>>[
+        for (final r in results)
+          if (r is Map &&
+              (r['cover_image'] as String?)?.isNotEmpty == true &&
+              !(r['cover_image'] as String)
+                  .toLowerCase()
+                  .contains('spacer.gif') &&
+              seenUrls.add(r['cover_image'] as String))
+            r.cast<String, dynamic>(),
+      ]..shuffle(Random());
 
       if (covers.isEmpty) {
         if (!mounted || loadId != _loadId) return;
@@ -214,7 +221,7 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
       // (rate-limit persistant, URL cassée côté Discogs, etc.) sont
       // simplement exclues de la bande plutôt que d'afficher un carré gris.
       final validityChecks = await Future.wait(
-        covers.map((url) => _isImageLoadable(url)),
+        covers.map((r) => _isImageLoadable(r['cover_image'] as String)),
       );
 
       if (!mounted || loadId != _loadId) return;
@@ -278,6 +285,10 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
     );
   }
 
+  void _openAlbumDetail(Map<String, dynamic> item) {
+    showAlbumDetailModal(context, result: item);
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.sizeOf(context).height;
@@ -301,11 +312,12 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
             // plus jamais la carte ci-dessous de s'afficher.
             _animatedBand(
               VinylScrollBand(
-                coverUrls: _bandTop,
+                items: _bandTop,
                 itemSize: 95,
                 spacing: 10,
                 speed: 40,
                 direction: BandDirection.toRight,
+                onTapItem: _openAlbumDetail,
               ),
               _kTopBandHeight,
             ),
@@ -391,11 +403,12 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
             SizedBox(height: gap2),
             _animatedBand(
               VinylScrollBand(
-                coverUrls: _bandBottom,
+                items: _bandBottom,
                 itemSize: 135,
                 direction: BandDirection.toLeft,
                 spacing: 15,
                 speed: 35,
+                onTapItem: _openAlbumDetail,
               ),
               _kBottomBandHeight,
             ),
