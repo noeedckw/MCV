@@ -39,6 +39,8 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
 
   static const Duration _kSizeDuration = Duration(milliseconds: 400);
 
+  static String? _cachedFeaturedImage;
+
   late final String _featuredImage;
 
   bool _showBands = false;
@@ -60,7 +62,7 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
   void initState() {
     super.initState();
 
-    _featuredImage =
+    _featuredImage = _cachedFeaturedImage ??=
         _kFeaturedImages[Random().nextInt(_kFeaturedImages.length)];
 
     widget.focusNode.addListener(_onFocusChanged);
