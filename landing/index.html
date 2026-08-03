@@ -146,14 +146,10 @@
 
   .record-wrap{
     position:relative;
-    width:300px;
-    height:300px;
-    max-width:70vw;
-    max-height:70vw;
+    width:clamp(160px, 65vw, 300px);
+    height:clamp(160px, 65vw, 300px);
   }
-  @media (min-width:481px){
-    .record-wrap{ max-width:300px; max-height:300px; }
-  }
+
   .record{
     width:100%;height:100%;
     animation:spin 9s linear infinite;
@@ -167,8 +163,8 @@
     position:absolute;
     bottom:-10px;
     right:-10px;
-    width:74px;
-    height:74px;
+    width:clamp(44px, 25vw, 74px);
+    height:clamp(44px, 25vw, 74px);
     border-radius:18px;
     background:var(--bg-plum);
     border:2px solid var(--bg-void);
@@ -186,7 +182,7 @@
 
   h1.headline{
     font-size:clamp(30px, 6vw, 54px);
-    line-height:1.04;
+    line-height:1.5;
     letter-spacing:-.01em;
   }
   .tagline{
@@ -557,7 +553,7 @@
         <p class="note" data-fr>Android peut signaler que l'application vient d'en dehors du Play Store. Autorisez l'installation à continuer, c'est normal pour un APK installé directement.</p>
       </div>
 
-      <div class="card">
+      <div class="card" id="pwa-card">
         <div class="icon" aria-hidden="true">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="3" width="12" height="18" rx="2"/><line x1="10" y1="19" x2="14" y2="19"/></svg>
         </div>
@@ -668,19 +664,17 @@
       if (saved === 'fr' || saved === 'en') setLang(saved);
     } catch(e) {}
   })();
-  function smoothScrollToId(id) {
-    const target = document.getElementById(id);
+
+  // --- Scroll vers une section, avec un offset différent mobile/desktop ---
+  function scrollToSection() {
+    const isMobile = window.innerWidth <= 820;
+    const targetId = isMobile ? 'pwa-card' : 'get-app';
+    const target = document.getElementById(targetId);
     if (!target) return;
 
-    const scrollToTarget = () => {
-      const y = target.getBoundingClientRect().top + window.pageYOffset;
-      window.scrollTo({ top: y, behavior: 'smooth' });
-    };
-
-    scrollToTarget();
-    // Re-corrige une fois que la barre d'adresse s'est stabilisée (mobile)
-    setTimeout(scrollToTarget, 350);
-    setTimeout(scrollToTarget, 700);
+    const offset = isMobile ? 50 : -50; // ajuste si besoin
+    const y = target.getBoundingClientRect().top + window.pageYOffset - offset;
+    window.scrollTo({ top: y, behavior: 'smooth' });
   }
 
   document.querySelectorAll('a[href^="#"]').forEach(link => {
@@ -688,7 +682,7 @@
       const id = link.getAttribute('href').slice(1);
       if (document.getElementById(id)) {
         e.preventDefault();
-        smoothScrollToId(id);
+        scrollToSection(id);
       }
     });
   });
