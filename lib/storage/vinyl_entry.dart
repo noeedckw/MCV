@@ -39,7 +39,7 @@ class VinylEntry {
   final String? localCoverPath;
   final Uint8List? coverBytes;
   final DateTime dateAdded;
-  final bool isWantlist;
+  final bool isWishlist;
   final int? releaseId;
   final String? releaseCountry;
   final String? releaseDate;
@@ -54,7 +54,7 @@ class VinylEntry {
   final String? notes;
 
   /// Favori — uniquement pertinent pour les entrées de la collection
-  /// (isWantlist == false). Coeur plein/vide sur la card + la modal de
+  /// (isWishlist == false). Coeur plein/vide sur la card + la modal de
   /// détail.
   final bool isFavorite;
 
@@ -70,7 +70,7 @@ class VinylEntry {
     this.localCoverPath,
     this.coverBytes,
     DateTime? dateAdded,
-    this.isWantlist = false,
+    this.isWishlist = false,
     this.releaseId,
     this.releaseCountry,
     this.releaseDate,
@@ -95,7 +95,7 @@ class VinylEntry {
     String? localCoverPath,
     Uint8List? coverBytes,
     DateTime? dateAdded,
-    bool? isWantlist,
+    bool? isWishlist,
     int? releaseId,
     String? releaseCountry,
     String? releaseDate,
@@ -117,7 +117,7 @@ class VinylEntry {
       localCoverPath: localCoverPath ?? this.localCoverPath,
       coverBytes: coverBytes ?? this.coverBytes,
       dateAdded: dateAdded ?? this.dateAdded,
-      isWantlist: isWantlist ?? this.isWantlist,
+      isWishlist: isWishlist ?? this.isWishlist,
       releaseId: releaseId ?? this.releaseId,
       releaseCountry: releaseCountry ?? this.releaseCountry,
       releaseDate: releaseDate ?? this.releaseDate,

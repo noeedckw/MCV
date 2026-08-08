@@ -66,7 +66,7 @@ class _CollectionSortDropdownState extends State<CollectionSortDropdown>
     if (provider.sortDescending != _pendingDescending) {
       provider.toggleSortDirection();
     }
-    // Le toggle favoris n'était ni visible ni éditable sur la wantlist —
+    // Le toggle favoris n'était ni visible ni éditable sur la wishlist —
     // on ne touche pas au filtre de la collection dans ce cas.
     if (_favoritesApplicable && provider.favoritesOnly != _pendingFavoritesOnly) {
       provider.setFavoritesOnly(_pendingFavoritesOnly);
@@ -346,7 +346,7 @@ class _SortDropdownPanel extends StatelessWidget {
 /// indépendamment du champ de tri sélectionné. Gris clair plein quand
 /// actif (pas de rouge, cohérent avec le reste du panneau monochrome).
 /// N'est affiché que pour la collection possédée (pas de favoris sur
-/// la wantlist).
+/// la wishlist).
 class _FavoritesOnlyToggle extends StatelessWidget {
   final bool active;
   final VoidCallback onTap;

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/collection_provider.dart';
 
-/// The two-tab switcher between the owned collection and the wantlist.
+/// The two-tab switcher between the owned collection and the wishlist.
 /// Same glass language as [PillNavBar]: blurred translucent fill, hairline
 /// border, soft drop shadow, and a light glass highlight (no accent color)
 /// sliding under the active tab.
@@ -154,11 +154,11 @@ class _CollectionViewSwitcherState extends State<CollectionViewSwitcher>
                       Expanded(
                         child: _SwitcherTab(
                           icon: Icons.bookmark_rounded,
-                          label: 'Wantlist',
-                          count: provider.wantlistCount,
-                          selected: provider.view == CollectionView.wantlist,
+                          label: 'Wishlist',
+                          count: provider.wishlistCount,
+                          selected: provider.view == CollectionView.wishlist,
                           onTap: () =>
-                              provider.setView(CollectionView.wantlist),
+                              provider.setView(CollectionView.wishlist),
                         ),
                       ),
                     ],

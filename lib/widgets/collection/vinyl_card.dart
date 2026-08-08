@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../storage/vinyl_entry.dart';
-import '../cover_image.dart';
+import '../cover/cover_image.dart';
 
 const Color _kAccent = Color(0xFFE3B673);
 

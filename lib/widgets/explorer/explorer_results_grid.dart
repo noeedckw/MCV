@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../storage/grid_columns_store.dart';
-import 'cards/result_card.dart';
+import 'cards/explorer_result_card.dart';
 import 'page_nav.dart';
 
 class GridFormatStyle {

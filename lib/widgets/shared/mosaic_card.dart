@@ -1,6 +1,6 @@
 // mosaic_card.dart
 import 'package:flutter/material.dart';
-import '../explorer_results_grid.dart';
+import '../explorer/explorer_results_grid.dart';
 
 class MosaicCard extends StatelessWidget {
   final Widget cover;

@@ -1,9 +1,13 @@
 // collection_album_detail_modal.dart
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+
 import '../../storage/vinyl_entry.dart';
 import '../../utils/artist_name.dart';
-import '../cover_viewer_modal.dart';
+import '../cover/cover_viewer_modal.dart';
+import '../shared/album_modal/discogs_format_utils.dart';
+import '../shared/album_modal/edition_labels.dart';
+import '../shared/album_modal/glass_modal_kit.dart';
+import '../shared/album_modal/tracklist_section.dart';
 
 Future<void> showCollectionAlbumDetail(
   BuildContext context, {
@@ -13,66 +17,16 @@ Future<void> showCollectionAlbumDetail(
   VoidCallback? onToggleList,
   VoidCallback? onToggleFavorite,
 }) {
-  return showGeneralDialog(
+  return showGlassModal(
     context: context,
-    barrierDismissible: true,
-    barrierLabel: 'Close',
-    barrierColor: Colors.transparent,
-    transitionDuration: const Duration(milliseconds: 260),
-    pageBuilder: (context, anim1, anim2) => _CollectionAlbumDetailModal(
+    pageBuilder: (context) => _CollectionAlbumDetailModal(
       entry: entry,
       cover: cover,
       onRemove: onRemove,
       onToggleList: onToggleList,
       onToggleFavorite: onToggleFavorite,
     ),
-    transitionBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeOutCubic,
-      );
-      return AnimatedBuilder(
-        animation: curved,
-        child: child,
-        builder: (context, child) => BackdropFilter(
-          filter: ui.ImageFilter.blur(
-            sigmaX: 20 * curved.value,
-            sigmaY: 20 * curved.value,
-          ),
-          child: Container(
-            color: Colors.black.withValues(alpha: .5 * curved.value),
-            child: FadeTransition(
-              opacity: curved,
-              child: ScaleTransition(
-                scale: Tween(begin: .95, end: 1.0).animate(curved),
-                child: child,
-              ),
-            ),
-          ),
-        ),
-      );
-    },
   );
-}
-
-/// Discogs suffixe parfois les noms (labels, artistes, etc.) d'un numéro
-/// de désambiguation entre parenthèses, ex: "Warp Records (2)" -> on ne
-/// veut garder que "Warp Records". Même logique que dans
-/// AlbumDetailModal._stripDisambiguationNumbers.
-String _stripDisambiguationNumbers(String value) {
-  return value.replaceAll(RegExp(r'\s?\(\d+\)'), '').trim();
-}
-
-/// Mirrors ResultCard's `_formatValue`: label peut être une List<String>
-/// ou une string simple selon comment c'est stocké dans VinylEntry.
-String? _formatLabelValue(dynamic value) {
-  if (value == null) return null;
-  final raw = value is List
-      ? (value.isEmpty ? null : value.join(' • '))
-      : value.toString();
-  if (raw == null || raw.isEmpty) return null;
-  final cleaned = _stripDisambiguationNumbers(raw);
-  return cleaned.isEmpty ? null : cleaned;
 }
 
 class _CollectionAlbumDetailModal extends StatefulWidget {
@@ -113,10 +67,10 @@ class _CollectionAlbumDetailModalState
   @override
   Widget build(BuildContext context) {
     final entry = widget.entry;
-    // Edition block is always shown, master included — mirrors the
-    // large card's wording: "Master Release" when there's no specific
-    // release tied to this entry, otherwise whatever format/country/date
-    // is available for the chosen pressing.
+    // Edition block is always shown, master included — mirrors the large
+    // card's wording: "Master Release" when there's no specific release
+    // tied to this entry, otherwise whatever format/country/date is
+    // available for the chosen pressing.
     final versionParts = <String>[
       if (entry.format != null && entry.format!.isNotEmpty) entry.format!,
       if (entry.releaseCountry != null && entry.releaseCountry!.isNotEmpty)
@@ -124,143 +78,24 @@ class _CollectionAlbumDetailModalState
     ];
     final versionLabel = entry.isSpecificEdition
         ? (versionParts.isNotEmpty
-              ? versionParts.join(' · ')
-              : 'Specific Edition')
-        : 'Master Release';
+            ? versionParts.join(' · ')
+            : 'Specific Edition')
+        : kGenericEditionLabel;
 
-    // Favorites only make sense for collection items, never wantlist ones.
-    final showFavorite =
-        widget.onToggleFavorite != null && !entry.isWantlist;
+    // Favorites only make sense for collection items, never wishlist ones.
+    final showFavorite = widget.onToggleFavorite != null && !entry.isWishlist;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => Navigator.of(context).maybePop(),
-      child: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final modalWidth = constraints.maxWidth < 680
-                ? constraints.maxWidth * 0.92
-                : 600.0;
-            final modalMaxHeight = (constraints.maxHeight - 32).clamp(
-              280.0,
-              680.0,
-            );
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {},
-                  child: SizedBox(
-                    width: modalWidth,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: 280,
-                        maxHeight: modalMaxHeight,
-                      ),
-                      child: Material(
-                        type: MaterialType.transparency,
-                        child: _GlassPanel(
-                          child: Stack(
-                            children: [
-                              _Content(
-                                entry: entry,
-                                cover: widget.cover,
-                                versionLabel: versionLabel,
-                                isSpecificEdition: entry.isSpecificEdition,
-                                onRemove: widget.onRemove,
-                                onToggleList: widget.onToggleList,
-                                showFavorite: showFavorite,
-                                isFavorite: _isFavorite,
-                                onToggleFavorite: _handleToggleFavorite,
-                              ),
-                              Positioned(
-                                top: 10,
-                                right: 10,
-                                child: _CloseButton(
-                                  onTap: () =>
-                                      Navigator.of(context).maybePop(),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _GlassPanel extends StatelessWidget {
-  final Widget child;
-  const _GlassPanel({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFF232329).withValues(alpha: .97),
-                const Color(0xFF131316).withValues(alpha: .97),
-              ],
-            ),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: .14),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: .55),
-                blurRadius: 50,
-                offset: const Offset(0, 24),
-              ),
-            ],
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
-class _CloseButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _CloseButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.black.withValues(alpha: .35),
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: SizedBox(
-          width: 34,
-          height: 34,
-          child: Icon(
-            Icons.close_rounded,
-            size: 19,
-            color: Colors.white.withValues(alpha: .8),
-          ),
-        ),
+    return GlassModalScaffold(
+      child: _Content(
+        entry: entry,
+        cover: widget.cover,
+        versionLabel: versionLabel,
+        isSpecificEdition: entry.isSpecificEdition,
+        onRemove: widget.onRemove,
+        onToggleList: widget.onToggleList,
+        showFavorite: showFavorite,
+        isFavorite: _isFavorite,
+        onToggleFavorite: _handleToggleFavorite,
       ),
     );
   }
@@ -295,100 +130,13 @@ class _EditionFavoriteButton extends StatelessWidget {
             border: Border.all(color: Colors.white.withValues(alpha: .10)),
           ),
           child: Icon(
-            isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+            isFavorite
+                ? Icons.favorite_rounded
+                : Icons.favorite_border_rounded,
             size: 15,
             color: Colors.white.withValues(alpha: isFavorite ? .75 : .55),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.2,
-        color: Colors.white.withValues(alpha: .40),
-      ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  final String text;
-  const _Chip(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        color: Colors.white.withValues(alpha: .06),
-        border: Border.all(color: Colors.white.withValues(alpha: .10)),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          letterSpacing: .25,
-          color: Colors.white.withValues(alpha: .70),
-        ),
-      ),
-    );
-  }
-}
-
-/// Small (i) icon with a tap-to-show tooltip. Reusable wherever a short
-/// explanatory note needs to sit next to a value without cluttering the
-/// layout.
-class _InfoTooltip extends StatelessWidget {
-  final String message;
-  const _InfoTooltip({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: message,
-      triggerMode: TooltipTriggerMode.tap,
-      showDuration: const Duration(seconds: 5),
-      preferBelow: true,
-      verticalOffset: 14,
-      constraints: const BoxConstraints(maxWidth: 220),
-      textStyle: TextStyle(
-        fontSize: 11.5,
-        height: 1.4,
-        fontWeight: FontWeight.w500,
-        color: Colors.white.withValues(alpha: .92),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      margin: const EdgeInsets.symmetric(horizontal: 28),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: const Color(0xFF2A2A30).withValues(alpha: .98),
-        border: Border.all(color: Colors.white.withValues(alpha: .14)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: .45),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Icon(
-        Icons.info_outline_rounded,
-        size: 14,
-        color: Colors.white.withValues(alpha: .40),
       ),
     );
   }
@@ -401,7 +149,7 @@ class _InfoTooltip extends StatelessWidget {
 ///   being squeezed / right-aligned against it (which looked broken).
 /// - When the entry isn't tied to a specific pressing, a small (i) icon
 ///   sits right after the value; tapping it explains what "master
-///   release" means, in English, matching the large card's wording.
+///   release" means.
 class _EditionSection extends StatelessWidget {
   final String value;
   final bool isSpecific;
@@ -435,17 +183,16 @@ class _EditionSection extends StatelessWidget {
 
         final labelPainter = TextPainter(
           text: TextSpan(text: _label, style: labelStyle),
-          textDirection: ui.TextDirection.ltr,
+          textDirection: TextDirection.ltr,
           textScaler: scaler,
         )..layout();
         final valuePainter = TextPainter(
           text: TextSpan(text: value, style: valueStyle),
-          textDirection: ui.TextDirection.ltr,
+          textDirection: TextDirection.ltr,
           textScaler: scaler,
         )..layout();
 
-        final needed =
-            labelPainter.width +
+        final needed = labelPainter.width +
             _spacing +
             valuePainter.width +
             (isSpecific ? 0 : _iconReserve);
@@ -464,7 +211,7 @@ class _EditionSection extends StatelessWidget {
             ),
             if (!isSpecific) ...[
               const SizedBox(width: 4),
-              _InfoTooltip(message: _genericTooltip),
+              const ModalInfoTooltip(message: _genericTooltip),
             ],
           ],
         );
@@ -476,7 +223,8 @@ class _EditionSection extends StatelessWidget {
               Text(_label, style: labelStyle),
               const SizedBox(width: _spacing),
               Expanded(
-                child: Align(alignment: Alignment.centerRight, child: valueRow),
+                child:
+                    Align(alignment: Alignment.centerRight, child: valueRow),
               ),
             ],
           );
@@ -492,139 +240,6 @@ class _EditionSection extends StatelessWidget {
           ],
         );
       },
-    );
-  }
-}
-
-/// Label collapsible : clampé à `_collapsedLines` lignes par défaut, avec
-/// un toggle "Show more / Show less" — même comportement que dans la
-/// modal de détail issue de la recherche (AlbumDetailModal).
-class _LabelSection extends StatefulWidget {
-  final String label;
-  const _LabelSection({required this.label});
-
-  @override
-  State<_LabelSection> createState() => _LabelSectionState();
-}
-
-class _LabelSectionState extends State<_LabelSection> {
-  static const int _collapsedLines = 2;
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final style = TextStyle(
-      fontSize: 11.5,
-      color: Colors.white.withValues(alpha: .45),
-    );
-    final text = 'Label : ${widget.label}';
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final painter = TextPainter(
-          text: TextSpan(text: text, style: style),
-          maxLines: _collapsedLines,
-          textDirection: ui.TextDirection.ltr,
-          textScaler: MediaQuery.textScalerOf(context),
-        )..layout(maxWidth: constraints.maxWidth);
-        final overflows = painter.didExceedMaxLines;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AnimatedCrossFade(
-              duration: const Duration(milliseconds: 200),
-              alignment: Alignment.topLeft,
-              crossFadeState: _expanded
-                  ? CrossFadeState.showSecond
-                  : CrossFadeState.showFirst,
-              firstChild: SizedBox(
-                width: double.infinity,
-                child: Text(
-                  text,
-                  maxLines: _collapsedLines,
-                  overflow: TextOverflow.ellipsis,
-                  style: style,
-                ),
-              ),
-              secondChild: SizedBox(
-                width: double.infinity,
-                child: Text(text, style: style),
-              ),
-            ),
-            if (overflows) ...[
-              const SizedBox(height: 4),
-              InkWell(
-                onTap: () => setState(() => _expanded = !_expanded),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Text(
-                    _expanded ? 'Show less' : 'Show more',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white.withValues(alpha: .65),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
-/// Compact glass action button used for Remove / Move-between-lists.
-/// Neutral glass style throughout — no destructive/red variant.
-class _GlassActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-
-  const _GlassActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = Colors.white.withValues(alpha: .78);
-    return Material(
-      color: Colors.white.withValues(alpha: .06),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 13),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withValues(alpha: .12)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 16, color: color),
-              const SizedBox(width: 7),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: color,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -656,15 +271,21 @@ class _Content extends StatelessWidget {
   Widget build(BuildContext context) {
     final genres = entry.genres ?? const [];
     final styles = entry.styles ?? const [];
-    final tracklist = entry.tracklist ?? const [];
-    final label = _formatLabelValue(entry.label);
+    final tracks = (entry.tracklist ?? const [])
+        .map(
+          (t) => TrackRowData(
+            position: t.position,
+            title: t.title,
+            duration: t.duration,
+          ),
+        )
+        .toList();
+    final label = formatLabelValue(entry.label);
 
-    final toggleIcon = entry.isWantlist
-        ? Icons.add_rounded
-        : Icons.bookmark_border_rounded;
-    final toggleLabel = entry.isWantlist
-        ? 'Add to Collection'
-        : 'Add to Wantlist';
+    final toggleIcon =
+        entry.isWishlist ? Icons.add_rounded : Icons.bookmark_border_rounded;
+    final toggleLabel =
+        entry.isWishlist ? 'Add to Collection' : 'Add to Wishlist';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -678,74 +299,18 @@ class _Content extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  GestureDetector(
+                  ModalCoverThumbnail(
+                    cover: cover,
                     onTap: () => showCoverViewer(context, cover: cover),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: .35),
-                            blurRadius: 18,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: SizedBox(
-                              width: 138,
-                              height: 138,
-                              child: cover,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.only(right: 34),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            cleanArtistName(entry.artist),
-                            style: TextStyle(
-                              fontSize: 15.5,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white.withValues(alpha: .78),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            entry.title,
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 21,
-                              fontWeight: FontWeight.w800,
-                              height: 1.15,
-                              letterSpacing: -.3,
-                              color: Colors.white,
-                            ),
-                          ),
-                          if (entry.year != null) ...[
-                            const SizedBox(height: 6),
-                            Text(
-                              entry.year.toString(),
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white.withValues(alpha: .45),
-                              ),
-                            ),
-                          ],
-                        ],
+                      child: FittedAlbumTitles(
+                        artist: cleanArtistName(entry.artist),
+                        album: entry.title,
+                        year: entry.year?.toString(),
                       ),
                     ),
                   ),
@@ -757,8 +322,8 @@ class _Content extends StatelessWidget {
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    ...genres.map(_Chip.new),
-                    ...styles.map(_Chip.new),
+                    ...genres.map(ModalChip.new),
+                    ...styles.map(ModalChip.new),
                   ],
                 ),
               ],
@@ -800,7 +365,7 @@ class _Content extends StatelessWidget {
               ),
               if (label != null) ...[
                 const SizedBox(height: 10),
-                _LabelSection(label: label),
+                ModalLabelSection(label: label),
               ],
             ],
           ),
@@ -816,69 +381,13 @@ class _Content extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _SectionLabel('TRACKLIST'),
-                const SizedBox(height: 10),
-                if (tracklist.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      'Tracklist unavailable.',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: Colors.white.withValues(alpha: .45),
-                      ),
-                    ),
-                  )
-                else
-                  ...tracklist.map(
-                    (t) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 5),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: 28,
-                            child: Text(
-                              t.position,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.white.withValues(alpha: .40),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              t.title,
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                color: Colors.white.withValues(alpha: .82),
-                              ),
-                            ),
-                          ),
-                          if (t.duration.isNotEmpty)
-                            Text(
-                              t.duration,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.white.withValues(alpha: .40),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                if (entry.notes != null && entry.notes!.trim().isNotEmpty) ...[
+                TracklistSection(tracks: tracks),
+                if (entry.notes != null &&
+                    entry.notes!.trim().isNotEmpty) ...[
                   const SizedBox(height: 22),
-                  const _SectionLabel('NOTES'),
+                  const ModalSectionLabel('NOTES'),
                   const SizedBox(height: 10),
-                  Text(
-                    entry.notes!.trim(),
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      height: 1.4,
-                      color: Colors.white.withValues(alpha: .55),
-                    ),
-                  ),
+                  ModalNotesSection(notes: entry.notes!.trim()),
                 ],
                 if (onRemove != null || onToggleList != null) ...[
                   const SizedBox(height: 22),
@@ -886,7 +395,7 @@ class _Content extends StatelessWidget {
                     children: [
                       if (onToggleList != null)
                         Expanded(
-                          child: _GlassActionButton(
+                          child: GlassActionButton(
                             icon: toggleIcon,
                             label: toggleLabel,
                             onTap: onToggleList,
@@ -896,7 +405,7 @@ class _Content extends StatelessWidget {
                         const SizedBox(width: 10),
                       if (onRemove != null)
                         Expanded(
-                          child: _GlassActionButton(
+                          child: GlassActionButton(
                             icon: Icons.delete_outline_rounded,
                             label: 'Remove',
                             onTap: onRemove,

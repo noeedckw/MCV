@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/explorer_provider.dart';
 import '../../providers/connectivity_provider.dart';
 
-import 'album_detail_modal.dart';
+import 'explorer_album_detail_modal.dart';
 import 'explorer_error.dart';
 import 'explorer_results_grid.dart';
 import 'explorer_vinyl_showcase.dart';
@@ -44,7 +44,7 @@ class ExplorerResultsContainer extends StatelessWidget {
       return ExplorerResultsGrid(
         results: provider.results,
         scrollController: scrollController,
-        onTapResult: (result) => showAlbumDetailModal(
+        onTapResult: (result) => showExplorerAlbumDetailModal(
           context,
           result: result.cast<String, dynamic>(),
         ),

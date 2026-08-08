@@ -4,8 +4,8 @@ import 'vinyl_entry.dart';
 abstract class LocalStorageService {
   Future<void> init();
 
-  // Collection and wantlist are now the same underlying store, split by
-  // VinylEntry.isWantlist — kept as separate methods here (rather than a
+  // Collection and wishlist are now the same underlying store, split by
+  // VinylEntry.isWishlist — kept as separate methods here (rather than a
   // single `getAll()` + filter) so existing call sites don't need to change.
 
   Future<List<VinylEntry>> getAllVinyls();
@@ -14,16 +14,16 @@ abstract class LocalStorageService {
   Future<bool> vinylExistsByDiscogsId(int discogsId, {int? releaseId});
   Future<void> deleteVinylByDiscogsId(int discogsId, {int? releaseId});
 
-  Future<List<VinylEntry>> getAllWantlist();
-  Future<void> insertWantlist(VinylEntry vinyl, {Uint8List? coverImageBytes});
-  Future<void> removeWantlistByDiscogsId(int discogsId, {int? releaseId});
-  Future<bool> wantlistExistsByDiscogsId(int discogsId, {int? releaseId});
+  Future<List<VinylEntry>> getAllWishlist();
+  Future<void> insertWishlist(VinylEntry vinyl, {Uint8List? coverImageBytes});
+  Future<void> removeWishlistByDiscogsId(int discogsId, {int? releaseId});
+  Future<bool> wishlistExistsByDiscogsId(int discogsId, {int? releaseId});
 
   Future<void> moveToCollection(int discogsId, {int? releaseId});
-  Future<void> moveToWantlist(int discogsId, {int? releaseId});
+  Future<void> moveToWishlist(int discogsId, {int? releaseId});
 
   // --- Favoris ---
-  // Uniquement pour les entrées de la collection (isWantlist == false).
+  // Uniquement pour les entrées de la collection (isWishlist == false).
   // Basé sur l'id local (VinylEntry.id) plutôt que discogsId/releaseId,
   // puisque le toggle part toujours d'une entrée déjà chargée qui a son id.
 

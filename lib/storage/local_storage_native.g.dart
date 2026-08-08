@@ -112,18 +112,18 @@ class $VinylsTableTable extends VinylsTable
     requiredDuringInsert: false,
     clientDefault: () => DateTime.now(),
   );
-  static const VerificationMeta _isWantlistMeta = const VerificationMeta(
-    'isWantlist',
+  static const VerificationMeta _isWishlistMeta = const VerificationMeta(
+    'isWishlist',
   );
   @override
-  late final GeneratedColumn<bool> isWantlist = GeneratedColumn<bool>(
-    'is_wantlist',
+  late final GeneratedColumn<bool> isWishlist = GeneratedColumn<bool>(
+    'is_wishlist',
     aliasedName,
     false,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_wantlist" IN (0, 1))',
+      'CHECK ("is_wishlist" IN (0, 1))',
     ),
     defaultValue: const Constant(false),
   );
@@ -225,7 +225,7 @@ class $VinylsTableTable extends VinylsTable
     condition,
     localCoverPath,
     dateAdded,
-    isWantlist,
+    isWishlist,
     releaseId,
     releaseCountry,
     releaseDate,
@@ -311,10 +311,10 @@ class $VinylsTableTable extends VinylsTable
         dateAdded.isAcceptableOrUnknown(data['date_added']!, _dateAddedMeta),
       );
     }
-    if (data.containsKey('is_wantlist')) {
+    if (data.containsKey('is_wishlist')) {
       context.handle(
-        _isWantlistMeta,
-        isWantlist.isAcceptableOrUnknown(data['is_wantlist']!, _isWantlistMeta),
+        _isWishlistMeta,
+        isWishlist.isAcceptableOrUnknown(data['is_wishlist']!, _isWishlistMeta),
       );
     }
     if (data.containsKey('release_id')) {
@@ -420,9 +420,9 @@ class $VinylsTableTable extends VinylsTable
         DriftSqlType.dateTime,
         data['${effectivePrefix}date_added'],
       )!,
-      isWantlist: attachedDatabase.typeMapping.read(
+      isWishlist: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
-        data['${effectivePrefix}is_wantlist'],
+        data['${effectivePrefix}is_wishlist'],
       )!,
       releaseId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -476,7 +476,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
   final String? condition;
   final String? localCoverPath;
   final DateTime dateAdded;
-  final bool isWantlist;
+  final bool isWishlist;
   final int? releaseId;
   final String? releaseCountry;
   final String? releaseDate;
@@ -496,7 +496,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
     this.condition,
     this.localCoverPath,
     required this.dateAdded,
-    required this.isWantlist,
+    required this.isWishlist,
     this.releaseId,
     this.releaseCountry,
     this.releaseDate,
@@ -531,7 +531,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
       map['local_cover_path'] = Variable<String>(localCoverPath);
     }
     map['date_added'] = Variable<DateTime>(dateAdded);
-    map['is_wantlist'] = Variable<bool>(isWantlist);
+    map['is_wishlist'] = Variable<bool>(isWishlist);
     if (!nullToAbsent || releaseId != null) {
       map['release_id'] = Variable<int>(releaseId);
     }
@@ -579,7 +579,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
           ? const Value.absent()
           : Value(localCoverPath),
       dateAdded: Value(dateAdded),
-      isWantlist: Value(isWantlist),
+      isWishlist: Value(isWishlist),
       releaseId: releaseId == null && nullToAbsent
           ? const Value.absent()
           : Value(releaseId),
@@ -621,7 +621,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
       condition: serializer.fromJson<String?>(json['condition']),
       localCoverPath: serializer.fromJson<String?>(json['localCoverPath']),
       dateAdded: serializer.fromJson<DateTime>(json['dateAdded']),
-      isWantlist: serializer.fromJson<bool>(json['isWantlist']),
+      isWishlist: serializer.fromJson<bool>(json['isWishlist']),
       releaseId: serializer.fromJson<int?>(json['releaseId']),
       releaseCountry: serializer.fromJson<String?>(json['releaseCountry']),
       releaseDate: serializer.fromJson<String?>(json['releaseDate']),
@@ -646,7 +646,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
       'condition': serializer.toJson<String?>(condition),
       'localCoverPath': serializer.toJson<String?>(localCoverPath),
       'dateAdded': serializer.toJson<DateTime>(dateAdded),
-      'isWantlist': serializer.toJson<bool>(isWantlist),
+      'isWishlist': serializer.toJson<bool>(isWishlist),
       'releaseId': serializer.toJson<int?>(releaseId),
       'releaseCountry': serializer.toJson<String?>(releaseCountry),
       'releaseDate': serializer.toJson<String?>(releaseDate),
@@ -669,7 +669,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
     Value<String?> condition = const Value.absent(),
     Value<String?> localCoverPath = const Value.absent(),
     DateTime? dateAdded,
-    bool? isWantlist,
+    bool? isWishlist,
     Value<int?> releaseId = const Value.absent(),
     Value<String?> releaseCountry = const Value.absent(),
     Value<String?> releaseDate = const Value.absent(),
@@ -691,7 +691,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
         ? localCoverPath.value
         : this.localCoverPath,
     dateAdded: dateAdded ?? this.dateAdded,
-    isWantlist: isWantlist ?? this.isWantlist,
+    isWishlist: isWishlist ?? this.isWishlist,
     releaseId: releaseId.present ? releaseId.value : this.releaseId,
     releaseCountry: releaseCountry.present
         ? releaseCountry.value
@@ -717,9 +717,9 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
           ? data.localCoverPath.value
           : this.localCoverPath,
       dateAdded: data.dateAdded.present ? data.dateAdded.value : this.dateAdded,
-      isWantlist: data.isWantlist.present
-          ? data.isWantlist.value
-          : this.isWantlist,
+      isWishlist: data.isWishlist.present
+          ? data.isWishlist.value
+          : this.isWishlist,
       releaseId: data.releaseId.present ? data.releaseId.value : this.releaseId,
       releaseCountry: data.releaseCountry.present
           ? data.releaseCountry.value
@@ -750,7 +750,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
           ..write('condition: $condition, ')
           ..write('localCoverPath: $localCoverPath, ')
           ..write('dateAdded: $dateAdded, ')
-          ..write('isWantlist: $isWantlist, ')
+          ..write('isWishlist: $isWishlist, ')
           ..write('releaseId: $releaseId, ')
           ..write('releaseCountry: $releaseCountry, ')
           ..write('releaseDate: $releaseDate, ')
@@ -775,7 +775,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
     condition,
     localCoverPath,
     dateAdded,
-    isWantlist,
+    isWishlist,
     releaseId,
     releaseCountry,
     releaseDate,
@@ -799,7 +799,7 @@ class VinylsTableData extends DataClass implements Insertable<VinylsTableData> {
           other.condition == this.condition &&
           other.localCoverPath == this.localCoverPath &&
           other.dateAdded == this.dateAdded &&
-          other.isWantlist == this.isWantlist &&
+          other.isWishlist == this.isWishlist &&
           other.releaseId == this.releaseId &&
           other.releaseCountry == this.releaseCountry &&
           other.releaseDate == this.releaseDate &&
@@ -821,7 +821,7 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
   final Value<String?> condition;
   final Value<String?> localCoverPath;
   final Value<DateTime> dateAdded;
-  final Value<bool> isWantlist;
+  final Value<bool> isWishlist;
   final Value<int?> releaseId;
   final Value<String?> releaseCountry;
   final Value<String?> releaseDate;
@@ -841,7 +841,7 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
     this.condition = const Value.absent(),
     this.localCoverPath = const Value.absent(),
     this.dateAdded = const Value.absent(),
-    this.isWantlist = const Value.absent(),
+    this.isWishlist = const Value.absent(),
     this.releaseId = const Value.absent(),
     this.releaseCountry = const Value.absent(),
     this.releaseDate = const Value.absent(),
@@ -862,7 +862,7 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
     this.condition = const Value.absent(),
     this.localCoverPath = const Value.absent(),
     this.dateAdded = const Value.absent(),
-    this.isWantlist = const Value.absent(),
+    this.isWishlist = const Value.absent(),
     this.releaseId = const Value.absent(),
     this.releaseCountry = const Value.absent(),
     this.releaseDate = const Value.absent(),
@@ -884,7 +884,7 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
     Expression<String>? condition,
     Expression<String>? localCoverPath,
     Expression<DateTime>? dateAdded,
-    Expression<bool>? isWantlist,
+    Expression<bool>? isWishlist,
     Expression<int>? releaseId,
     Expression<String>? releaseCountry,
     Expression<String>? releaseDate,
@@ -905,7 +905,7 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
       if (condition != null) 'condition': condition,
       if (localCoverPath != null) 'local_cover_path': localCoverPath,
       if (dateAdded != null) 'date_added': dateAdded,
-      if (isWantlist != null) 'is_wantlist': isWantlist,
+      if (isWishlist != null) 'is_wishlist': isWishlist,
       if (releaseId != null) 'release_id': releaseId,
       if (releaseCountry != null) 'release_country': releaseCountry,
       if (releaseDate != null) 'release_date': releaseDate,
@@ -928,7 +928,7 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
     Value<String?>? condition,
     Value<String?>? localCoverPath,
     Value<DateTime>? dateAdded,
-    Value<bool>? isWantlist,
+    Value<bool>? isWishlist,
     Value<int?>? releaseId,
     Value<String?>? releaseCountry,
     Value<String?>? releaseDate,
@@ -949,7 +949,7 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
       condition: condition ?? this.condition,
       localCoverPath: localCoverPath ?? this.localCoverPath,
       dateAdded: dateAdded ?? this.dateAdded,
-      isWantlist: isWantlist ?? this.isWantlist,
+      isWishlist: isWishlist ?? this.isWishlist,
       releaseId: releaseId ?? this.releaseId,
       releaseCountry: releaseCountry ?? this.releaseCountry,
       releaseDate: releaseDate ?? this.releaseDate,
@@ -994,8 +994,8 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
     if (dateAdded.present) {
       map['date_added'] = Variable<DateTime>(dateAdded.value);
     }
-    if (isWantlist.present) {
-      map['is_wantlist'] = Variable<bool>(isWantlist.value);
+    if (isWishlist.present) {
+      map['is_wishlist'] = Variable<bool>(isWishlist.value);
     }
     if (releaseId.present) {
       map['release_id'] = Variable<int>(releaseId.value);
@@ -1037,7 +1037,7 @@ class VinylsTableCompanion extends UpdateCompanion<VinylsTableData> {
           ..write('condition: $condition, ')
           ..write('localCoverPath: $localCoverPath, ')
           ..write('dateAdded: $dateAdded, ')
-          ..write('isWantlist: $isWantlist, ')
+          ..write('isWishlist: $isWishlist, ')
           ..write('releaseId: $releaseId, ')
           ..write('releaseCountry: $releaseCountry, ')
           ..write('releaseDate: $releaseDate, ')
@@ -1074,7 +1074,7 @@ typedef $$VinylsTableTableCreateCompanionBuilder =
       Value<String?> condition,
       Value<String?> localCoverPath,
       Value<DateTime> dateAdded,
-      Value<bool> isWantlist,
+      Value<bool> isWishlist,
       Value<int?> releaseId,
       Value<String?> releaseCountry,
       Value<String?> releaseDate,
@@ -1096,7 +1096,7 @@ typedef $$VinylsTableTableUpdateCompanionBuilder =
       Value<String?> condition,
       Value<String?> localCoverPath,
       Value<DateTime> dateAdded,
-      Value<bool> isWantlist,
+      Value<bool> isWishlist,
       Value<int?> releaseId,
       Value<String?> releaseCountry,
       Value<String?> releaseDate,
@@ -1166,8 +1166,8 @@ class $$VinylsTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<bool> get isWantlist => $composableBuilder(
-    column: $table.isWantlist,
+  ColumnFilters<bool> get isWishlist => $composableBuilder(
+    column: $table.isWishlist,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1271,8 +1271,8 @@ class $$VinylsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get isWantlist => $composableBuilder(
-    column: $table.isWantlist,
+  ColumnOrderings<bool> get isWishlist => $composableBuilder(
+    column: $table.isWishlist,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -1358,8 +1358,8 @@ class $$VinylsTableTableAnnotationComposer
   GeneratedColumn<DateTime> get dateAdded =>
       $composableBuilder(column: $table.dateAdded, builder: (column) => column);
 
-  GeneratedColumn<bool> get isWantlist => $composableBuilder(
-    column: $table.isWantlist,
+  GeneratedColumn<bool> get isWishlist => $composableBuilder(
+    column: $table.isWishlist,
     builder: (column) => column,
   );
 
@@ -1435,7 +1435,7 @@ class $$VinylsTableTableTableManager
                 Value<String?> condition = const Value.absent(),
                 Value<String?> localCoverPath = const Value.absent(),
                 Value<DateTime> dateAdded = const Value.absent(),
-                Value<bool> isWantlist = const Value.absent(),
+                Value<bool> isWishlist = const Value.absent(),
                 Value<int?> releaseId = const Value.absent(),
                 Value<String?> releaseCountry = const Value.absent(),
                 Value<String?> releaseDate = const Value.absent(),
@@ -1455,7 +1455,7 @@ class $$VinylsTableTableTableManager
                 condition: condition,
                 localCoverPath: localCoverPath,
                 dateAdded: dateAdded,
-                isWantlist: isWantlist,
+                isWishlist: isWishlist,
                 releaseId: releaseId,
                 releaseCountry: releaseCountry,
                 releaseDate: releaseDate,
@@ -1477,7 +1477,7 @@ class $$VinylsTableTableTableManager
                 Value<String?> condition = const Value.absent(),
                 Value<String?> localCoverPath = const Value.absent(),
                 Value<DateTime> dateAdded = const Value.absent(),
-                Value<bool> isWantlist = const Value.absent(),
+                Value<bool> isWishlist = const Value.absent(),
                 Value<int?> releaseId = const Value.absent(),
                 Value<String?> releaseCountry = const Value.absent(),
                 Value<String?> releaseDate = const Value.absent(),
@@ -1497,7 +1497,7 @@ class $$VinylsTableTableTableManager
                 condition: condition,
                 localCoverPath: localCoverPath,
                 dateAdded: dateAdded,
-                isWantlist: isWantlist,
+                isWishlist: isWishlist,
                 releaseId: releaseId,
                 releaseCountry: releaseCountry,
                 releaseDate: releaseDate,

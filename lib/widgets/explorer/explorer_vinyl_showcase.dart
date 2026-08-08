@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/explorer_provider.dart';
-import 'album_detail_modal.dart';
+import 'explorer_album_detail_modal.dart';
 import 'genre_accent.dart';
 import 'vinyl_scroll_band.dart';
 import '../../utils/cover_url.dart';
@@ -282,7 +282,7 @@ class _ExplorerVinylShowcaseState extends State<ExplorerVinylShowcase> {
   }
 
   void _openAlbumDetail(Map<String, dynamic> item) {
-    showAlbumDetailModal(context, result: item);
+    showExplorerAlbumDetailModal(context, result: item);
   }
 
   @override

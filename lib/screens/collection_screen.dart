@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/collection_provider.dart';
 import '../storage/vinyl_entry.dart';
-import '../widgets/cover_image.dart';
+import '../widgets/cover/cover_image.dart';
 import '../widgets/collection/collection_container.dart';
 import '../widgets/collection/collection_album_detail_modal.dart';
 
@@ -26,10 +26,10 @@ class CollectionScreen extends StatelessWidget {
         if (context.mounted) Navigator.of(context).maybePop();
       },
       onToggleList: () async {
-        if (entry.isWantlist) {
+        if (entry.isWishlist) {
           await provider.moveToCollection(entry);
         } else {
-          await provider.moveToWantlist(entry);
+          await provider.moveToWishlist(entry);
         }
         if (context.mounted) Navigator.of(context).maybePop();
       },

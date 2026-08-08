@@ -35,7 +35,7 @@ class _CollectionContainerState extends State<CollectionContainer> {
 
   static const _emptyStateAssets = [
     "assets/images/search/empty_collection_vinyl.png",
-    "assets/images/search/empty_wantlist_vinyl.png",
+    "assets/images/search/empty_wishlist_vinyl.png",
     "assets/images/error/no_results_vinyl_1.png",
     "assets/images/error/no_results_vinyl_2.png",
   ];
@@ -74,7 +74,7 @@ class _CollectionContainerState extends State<CollectionContainer> {
       view == CollectionView.owned ? 0 : 1;
 
   static CollectionView _viewForIndex(int index) =>
-      index == 0 ? CollectionView.owned : CollectionView.wantlist;
+      index == 0 ? CollectionView.owned : CollectionView.wishlist;
 
   void _onPageChanged(int index, CollectionProvider provider) {
     final newView = _viewForIndex(index);
@@ -88,12 +88,12 @@ class _CollectionContainerState extends State<CollectionContainer> {
     CollectionProvider provider,
     CollectionView view,
   ) {
-    final isWantlist = view == CollectionView.wantlist;
+    final isWishlist = view == CollectionView.wishlist;
     final isSearching = provider.searchQuery.isNotEmpty;
 
     if (isSearching) return CollectionEmptyType.noSearchResults;
-    return isWantlist
-        ? CollectionEmptyType.emptyWantlist
+    return isWishlist
+        ? CollectionEmptyType.emptyWishlist
         : CollectionEmptyType.emptyCollection;
   }
 
@@ -110,7 +110,7 @@ class _CollectionContainerState extends State<CollectionContainer> {
           )
         : CollectionGrid(
             key: ValueKey(view), // <- garantit un State distinct par vue
-            collectionKey: view == CollectionView.owned ? 'collection' : 'wantlist',
+            collectionKey: view == CollectionView.owned ? 'collection' : 'wishlist',
             entries: vinyls,
             topPadding: _headerHeight + _headerGap,
             onTapEntry: widget.onTapEntry ?? (_) {},
@@ -147,7 +147,7 @@ class _CollectionContainerState extends State<CollectionContainer> {
             onPageChanged: (index) => _onPageChanged(index, provider),
             children: [
               _buildPage(CollectionView.owned, provider),
-              _buildPage(CollectionView.wantlist, provider),
+              _buildPage(CollectionView.wishlist, provider),
             ],
           ),
         ),
@@ -209,24 +209,24 @@ class MeasureSize extends SingleChildRenderObjectWidget {
   });
 
   @override
-  _MeasureSizeRenderObject createRenderObject(BuildContext context) {
-    return _MeasureSizeRenderObject(onChange);
+  MeasureSizeRenderObject createRenderObject(BuildContext context) {
+    return MeasureSizeRenderObject(onChange);
   }
 
   @override
   void updateRenderObject(
     BuildContext context,
-    _MeasureSizeRenderObject renderObject,
+    MeasureSizeRenderObject renderObject,
   ) {
     renderObject.onChange = onChange;
   }
 }
 
-class _MeasureSizeRenderObject extends RenderProxyBox {
+class MeasureSizeRenderObject extends RenderProxyBox {
   ValueChanged<Size> onChange;
   Size? _oldSize;
 
-  _MeasureSizeRenderObject(this.onChange);
+  MeasureSizeRenderObject(this.onChange);
 
   @override
   void performLayout() {

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../storage/vinyl_entry.dart';
-import '../../cover_image.dart';
-import '../../explorer/cards/mosaic_card.dart';
-import '../../explorer/cards/standard_card.dart';
+import '../../cover/cover_image.dart';
+import '../../shared/mosaic_card.dart';
+import '../../shared/standard_card.dart';
 import '../../explorer/explorer_results_grid.dart';
-import '../../explorer/cards/compact_card.dart';
+import '../../shared/compact_card.dart';
 import 'collection_large_card.dart';
 import '../../../utils/artist_name.dart';
 
@@ -23,7 +23,7 @@ class CollectionResultCard extends StatelessWidget {
   final VoidCallback onTap;
 
   /// Favorites are only ever meaningful for owned collection entries, not
-  /// wantlist ones — callers building the wantlist grid should simply not
+  /// wishlist ones — callers building the wishlist grid should simply not
   /// pass this, which hides the heart entirely for that tab.
   final VoidCallback? onToggleFavorite;
 
@@ -66,9 +66,9 @@ class CollectionResultCard extends StatelessWidget {
       _ => MosaicCard(cover: cover, album: entry.title, style: style),
     };
 
-    // Never on wantlist entries, and never when the caller doesn't wire a
+    // Never on wishlist entries, and never when the caller doesn't wire a
     // handler for it (e.g. explorer-flavoured usages of this same card).
-    final showFavorite = onToggleFavorite != null && !entry.isWantlist;
+    final showFavorite = onToggleFavorite != null && !entry.isWishlist;
 
     return GestureDetector(
       onTap: onTap,

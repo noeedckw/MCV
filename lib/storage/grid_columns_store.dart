@@ -30,7 +30,7 @@ class GridColumnsStore {
   }
 
   /// Lecture synchrone — utilisable directement dans `initState`.
-  /// [gridKey] ex: `'explorer'`, `'collection'`, `'wantlist'`.
+  /// [gridKey] ex: `'explorer'`, `'collection'`, `'wishlist'`.
   static int? get(String gridKey) => _cache[gridKey];
 
   /// Écrit en mémoire immédiatement (donc dispo tout de suite pour tout

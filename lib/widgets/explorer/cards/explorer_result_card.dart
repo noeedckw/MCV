@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../cover_image.dart';
+import '../../cover/cover_image.dart';
 import '../explorer_results_grid.dart';
-import 'compact_card.dart';
-import 'large_card.dart';
-import 'mosaic_card.dart';
-import 'standard_card.dart';
+import '../../shared/compact_card.dart';
+import 'explorer_large_card.dart';
+import '../../shared/mosaic_card.dart';
+import '../../shared/standard_card.dart';
 
 class ResultCard extends StatelessWidget {
   final Map result;

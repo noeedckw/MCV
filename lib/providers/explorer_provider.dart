@@ -4,8 +4,8 @@ import '../services/discogs_api.dart';
 import '../storage/local_storage_service.dart';
 import '../storage/vinyl_entry.dart';
 import 'collection_provider.dart';
-import '../utils/discogs_notes.dart';
 import '../utils/cover_url.dart';
+import '../utils/vinyl_entry_builder.dart';
 
 class ExplorerProvider extends ChangeNotifier {
   DiscogsApi? _discogsApi;
@@ -29,54 +29,6 @@ class ExplorerProvider extends ChangeNotifier {
     return api!;
   }
 
-  List<dynamic> results = [];
-  bool isLoading = false;
-  String? errorMessage;
-
-  String? lastQuery;
-
-  // Versions disponibles pour le master actuellement ouvert (détail au clic
-  // sur une card). Séparé de `results` car ce n'est pas une liste de
-  // résultats de recherche mais les pressages d'un seul master.
-  List<dynamic> masterVersions = [];
-  bool isLoadingVersions = false;
-  String? versionsErrorMessage;
-  int? currentMasterId;
-
-  // Incrémenté à chaque nouvelle recherche. Sert à identifier la requête
-  // "courante" : si un appel async se termine alors que _requestId a déjà
-  // changé (une recherche plus récente a démarré, ou l'utilisateur a vidé
-  // le champ), son résultat est ignoré. Ça règle à la fois la concurrence
-  // (pas de résultat obsolète qui écrase un résultat plus récent) et évite
-  // de manipuler un Completer/Future à annuler manuellement.
-  int _requestId = 0;
-
-  // Même logique que _requestId, mais dédiée aux appels de versions de
-  // master, pour ne pas interférer avec la recherche principale.
-  int _versionsRequestId = 0;
-
-  Map<String, dynamic>? masterDetail;
-  bool isLoadingDetail = false;
-  String? detailErrorMessage;
-  int _detailRequestId = 0;
-
-  /// Id "stable" à utiliser pour toute opération de collection/wantlist
-  /// (add/remove/check) sur l'album actuellement ouvert dans la modal.
-  ///
-  /// Les résultats de recherche classique (`search()`, utilisés entre
-  /// autres par le showcase à vinyles) peuvent être de type "master" OU
-  /// "release" (Discogs distingue via `result['type']`) — contrairement à
-  /// `searchMasters()` qui garantit toujours un master id. Une "release"
-  /// pointe en général vers un master (`master_id` dans son détail) qui
-  /// regroupe toutes ses éditions ; ce master_id est LA clé stable pour
-  /// dédupliquer "cet album est déjà dans ma collection" indépendamment du
-  /// pressage précis. `effectiveMasterId` est donc résolu une fois dans
-  /// `loadDetailForResult` (master id direct, ou master_id extrait de la
-  /// release, ou l'id de la release elle-même en dernier recours si elle
-  /// n'a vraiment aucun master) puis réutilisé partout ailleurs — jamais
-  /// `result['id']` brut, qui pourrait être un id de release non résolu.
-  int? effectiveMasterId;
-
   // Vrai pendant que la modal de détail d'un album est affichée (ouverture
   // -> fermeture, animation de sortie comprise). Regardé par ExplorerScreen
   // et MainNavigationScreen pour cacher la search bar et la navbar tant
@@ -90,150 +42,34 @@ class ExplorerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadMasterDetail(int masterId) async {
-    final requestId = ++_detailRequestId;
-
-    isLoadingDetail = true;
-    detailErrorMessage = null;
-    masterDetail = null;
-    notifyListeners();
-
-    try {
-      final detail = await discogsApi.getMasterDetails(masterId);
-
-      if (requestId != _detailRequestId) return;
-
-      masterDetail = detail;
-      isLoadingDetail = false;
-      notifyListeners();
-    } catch (e) {
-      if (requestId != _detailRequestId) return;
-
-      detailErrorMessage = e.toString();
-      isLoadingDetail = false;
-      notifyListeners();
-    }
-  }
-
-  /// Point d'entrée unique pour ouvrir la modal de détail depuis un
-  /// résultat de recherche, qu'il soit de type "master" ou "release" —
-  /// ne modifie ni loadMasterDetail ni loadMasterVersions : elle se
-  /// contente de résoudre le bon masterId en amont puis délègue
-  /// entièrement à ces méthodes existantes, pour un comportement identique
-  /// (toutes les éditions listées) peu importe d'où vient le clic.
-  ///
-  /// Résout aussi `effectiveMasterId` et lance `checkCollectionStatus`
-  /// dessus une fois connu — plus la peine d'appeler checkCollectionStatus
-  /// séparément avec un id potentiellement pas encore résolu.
-  Future<void> loadDetailForResult(Map<String, dynamic> result) async {
-    final id = result['id'] as int;
-    final isMaster = result['type'] == 'master';
-
-    if (isMaster) {
-      effectiveMasterId = id;
-      await loadMasterDetail(id);
-      await loadMasterVersions(id);
-      checkCollectionStatus(id);
-      return;
-    }
-
-    // C'est une release (ou un type inconnu/absent, traité comme tel par
-    // prudence) : on la charge d'abord pour en extraire master_id, présent
-    // dans la réponse /releases/{id} quand un master existe pour cet
-    // album, puis on délègue aux méthodes master existantes.
-    final requestId = ++_detailRequestId;
-
-    isLoadingDetail = true;
-    detailErrorMessage = null;
-    masterDetail = null;
-    effectiveMasterId = null;
-    notifyListeners();
-
-    try {
-      final release = await discogsApi.getReleaseDetails(id);
-
-      if (requestId != _detailRequestId) return;
-
-      final masterId = release['master_id'] as int?;
-
-      if (masterId != null) {
-        effectiveMasterId = masterId;
-        // Délégation complète : loadMasterDetail/loadMasterVersions gèrent
-        // elles-mêmes leur propre requestId, loading state, etc.
-        await loadMasterDetail(masterId);
-        await loadMasterVersions(masterId);
-        checkCollectionStatus(masterId);
-      } else {
-        // Pas de master pour cette release (pressage isolé) : on
-        // l'affiche telle quelle, sans liste d'éditions, et on utilise
-        // son propre id comme clé stable de collection à défaut de mieux.
-        effectiveMasterId = id;
-        masterDetail = release;
-        isLoadingDetail = false;
-        masterVersions = [];
-        versionsErrorMessage = null;
-        notifyListeners();
-        checkCollectionStatus(id);
-      }
-    } catch (e) {
-      if (requestId != _detailRequestId) return;
-
-      detailErrorMessage = "Impossible de charger les détails de cet album.";
-      isLoadingDetail = false;
-      notifyListeners();
-    }
-  }
-
-  /// Toggle collection : ajoute si absent, retire si déjà présent.
-  /// selectedVersion est passé séparément (plutôt que déjà fourré dans
-  /// `result['selected_version']`) pour que la modal n'ait qu'un seul
-  /// point d'appel, que l'utilisateur ait choisi une édition ou non.
-  ///
-  /// `discogsId` utilisé pour ajouter/retirer est toujours celui du MASTER
-  /// (result['id']), jamais celui de l'édition choisie : c'est la clé
-  /// stable qui répond à "cet album est-il déjà dans ma collection ?",
-  /// indépendamment du pressage. Le pressage lui-même est du métadata
-  /// (releaseId/releaseCountry/releaseDate sur le VinylEntry), pas la clé
-  /// de dédup — sinon rouvrir la modale après avoir ajouté une édition
-  /// précise affichait à nouveau "Add to Collection" au lieu de "In
-  /// Collection", puisque checkCollectionStatus vérifie par masterId.
-  ///
-  /// IMPORTANT : `result['id']` doit déjà être l'id résolu
-  /// (effectiveMasterId) — c'est la responsabilité de l'appelant (la modal)
-  /// de le garantir, cette méthode ne re-résout rien elle-même.
-  Future<void> toggleCollection(
-    Map<String, dynamic> result,
-    Map? selectedVersion,
-  ) async {
-    final masterId = result['id'] as int;
-    final releaseId = selectedVersion?['id'] as int?;
-
-    if (isInCollection) {
-      await storage.deleteVinylByDiscogsId(masterId, releaseId: releaseId);
-      isInCollection = false;
-      notifyListeners();
-      await collectionProvider.reload();
-      return;
-    }
-
-    final payload = <String, dynamic>{
-      ...result,
-      'selected_version': selectedVersion,
-    };
-    await addToCollection(payload);
-  }
-
   void clearMasterDetail() {
     masterDetail = null;
     isLoadingDetail = false;
     detailErrorMessage = null;
     effectiveMasterId = null;
     isInCollection = false;
-    isInWantlist = false;
+    isInWishlist = false;
     _statusCheckedForToken = null;
     clearMasterVersions();
     clearReleaseDetail();
   }
+
+  // =====================================================================
+  // RECHERCHE
+  // =====================================================================
+
+  List<dynamic> results = [];
+  bool isLoading = false;
+  String? errorMessage;
+  String? lastQuery;
+
+  // Incrémenté à chaque nouvelle recherche. Sert à identifier la requête
+  // "courante" : si un appel async se termine alors que _requestId a déjà
+  // changé (une recherche plus récente a démarré, ou l'utilisateur a vidé
+  // le champ), son résultat est ignoré. Ça règle à la fois la concurrence
+  // (pas de résultat obsolète qui écrase un résultat plus récent) et évite
+  // de manipuler un Completer/Future à annuler manuellement.
+  int _requestId = 0;
 
   Future<void> search(String query) async {
     final trimmed = query.trim();
@@ -332,6 +168,138 @@ class ExplorerProvider extends ChangeNotifier {
     }
   }
 
+  // =====================================================================
+  // DÉTAIL MASTER / RELEASE
+  // =====================================================================
+
+  // Versions disponibles pour le master actuellement ouvert (détail au clic
+  // sur une card). Séparé de `results` car ce n'est pas une liste de
+  // résultats de recherche mais les pressages d'un seul master.
+  List<dynamic> masterVersions = [];
+  bool isLoadingVersions = false;
+  String? versionsErrorMessage;
+  int? currentMasterId;
+
+  // Même logique que _requestId, mais dédiée aux appels de versions de
+  // master, pour ne pas interférer avec la recherche principale.
+  int _versionsRequestId = 0;
+
+  Map<String, dynamic>? masterDetail;
+  bool isLoadingDetail = false;
+  String? detailErrorMessage;
+  int _detailRequestId = 0;
+
+  /// Id "stable" à utiliser pour toute opération de collection/wishlist
+  /// (add/remove/check) sur l'album actuellement ouvert dans la modal.
+  ///
+  /// Les résultats de recherche classique (`search()`, utilisés entre
+  /// autres par le showcase à vinyles) peuvent être de type "master" OU
+  /// "release" (Discogs distingue via `result['type']`) — contrairement à
+  /// `searchMasters()` qui garantit toujours un master id. Une "release"
+  /// pointe en général vers un master (`master_id` dans son détail) qui
+  /// regroupe toutes ses éditions ; ce master_id est LA clé stable pour
+  /// dédupliquer "cet album est déjà dans ma collection" indépendamment du
+  /// pressage précis. `effectiveMasterId` est donc résolu une fois dans
+  /// `loadDetailForResult` (master id direct, ou master_id extrait de la
+  /// release, ou l'id de la release elle-même en dernier recours si elle
+  /// n'a vraiment aucun master) puis réutilisé partout ailleurs — jamais
+  /// `result['id']` brut, qui pourrait être un id de release non résolu.
+  int? effectiveMasterId;
+
+  Future<void> loadMasterDetail(int masterId) async {
+    final requestId = ++_detailRequestId;
+
+    isLoadingDetail = true;
+    detailErrorMessage = null;
+    masterDetail = null;
+    notifyListeners();
+
+    try {
+      final detail = await discogsApi.getMasterDetails(masterId);
+
+      if (requestId != _detailRequestId) return;
+
+      masterDetail = detail;
+      isLoadingDetail = false;
+      notifyListeners();
+    } catch (e) {
+      if (requestId != _detailRequestId) return;
+
+      detailErrorMessage = e.toString();
+      isLoadingDetail = false;
+      notifyListeners();
+    }
+  }
+
+  /// Point d'entrée unique pour ouvrir la modal de détail depuis un
+  /// résultat de recherche, qu'il soit de type "master" ou "release" —
+  /// ne modifie ni loadMasterDetail ni loadMasterVersions : elle se
+  /// contente de résoudre le bon masterId en amont puis délègue
+  /// entièrement à ces méthodes existantes, pour un comportement identique
+  /// (toutes les éditions listées) peu importe d'où vient le clic.
+  ///
+  /// Résout aussi `effectiveMasterId` et lance `checkCollectionStatus`
+  /// dessus une fois connu — plus la peine d'appeler checkCollectionStatus
+  /// séparément avec un id potentiellement pas encore résolu.
+  Future<void> loadDetailForResult(Map<String, dynamic> result) async {
+    final id = result['id'] as int;
+    final isMaster = result['type'] == 'master';
+
+    if (isMaster) {
+      effectiveMasterId = id;
+      await loadMasterDetail(id);
+      await loadMasterVersions(id);
+      checkCollectionStatus(id);
+      return;
+    }
+
+    // C'est une release (ou un type inconnu/absent, traité comme tel par
+    // prudence) : on la charge d'abord pour en extraire master_id, présent
+    // dans la réponse /releases/{id} quand un master existe pour cet
+    // album, puis on délègue aux méthodes master existantes.
+    final requestId = ++_detailRequestId;
+
+    isLoadingDetail = true;
+    detailErrorMessage = null;
+    masterDetail = null;
+    effectiveMasterId = null;
+    notifyListeners();
+
+    try {
+      final release = await discogsApi.getReleaseDetails(id);
+
+      if (requestId != _detailRequestId) return;
+
+      final masterId = release['master_id'] as int?;
+
+      if (masterId != null) {
+        effectiveMasterId = masterId;
+        // Délégation complète : loadMasterDetail/loadMasterVersions gèrent
+        // elles-mêmes leur propre requestId, loading state, etc.
+        await loadMasterDetail(masterId);
+        await loadMasterVersions(masterId);
+        checkCollectionStatus(masterId);
+      } else {
+        // Pas de master pour cette release (pressage isolé) : on
+        // l'affiche telle quelle, sans liste d'éditions, et on utilise
+        // son propre id comme clé stable de collection à défaut de mieux.
+        effectiveMasterId = id;
+        masterDetail = release;
+        isLoadingDetail = false;
+        masterVersions = [];
+        versionsErrorMessage = null;
+        notifyListeners();
+        checkCollectionStatus(id);
+      }
+    } catch (e) {
+      if (requestId != _detailRequestId) return;
+
+      detailErrorMessage = "Impossible de charger les détails de cet album.";
+      isLoadingDetail = false;
+      notifyListeners();
+    }
+  }
+
   /// À appeler quand l'utilisateur clique sur une card issue de
   /// searchMasters() — récupère les pressages/versions disponibles pour ce
   /// master précis.
@@ -368,207 +336,6 @@ class ExplorerProvider extends ChangeNotifier {
     masterVersions = [];
     isLoadingVersions = false;
     versionsErrorMessage = null;
-    notifyListeners();
-  }
-
-  List<TrackInfo>? _extractTracklist(List? raw) {
-    if (raw == null || raw.isEmpty) return null;
-    return raw.map((t) {
-      final track = t as Map;
-      return TrackInfo(
-        position: track['position'] as String? ?? '',
-        title: track['title'] as String? ?? '',
-        duration: track['duration'] as String? ?? '',
-      );
-    }).toList();
-  }
-
-  /// La tracklist à sauvegarder : celle de l'édition précise si une a été
-  /// choisie et que releaseDetail a fini de charger, sinon celle du master
-  /// en repli (ex: l'utilisateur ajoute juste après avoir changé d'édition,
-  /// avant que le fetch de releaseDetail ait fini — mieux vaut sauvegarder
-  /// la tracklist du master que rien du tout).
-  List<TrackInfo>? _tracklistForEntry(Map? selectedVersion) {
-    final raw = selectedVersion != null
-        ? (releaseDetail?['tracklist'] as List? ??
-              masterDetail?['tracklist'] as List?)
-        : masterDetail?['tracklist'] as List?;
-    return _extractTracklist(raw);
-  }
-
-  /// Discogs n'expose `labels` (le vrai label de musique / maison de
-  /// disque, ex: Columbia, Motown...) qu'au niveau RELEASE, jamais au
-  /// niveau master — ça n'a pas de sens là, puisque le label peut varier
-  /// d'une édition à l'autre. On privilégie donc :
-  /// 1. Le label de l'édition précise sélectionnée (releaseDetail), si son
-  ///    detail a fini de charger.
-  /// 2. Sinon, le label déjà présent dans le résultat de recherche
-  ///    (`result['label']`) — celui-là même utilisé par ResultCard/LargeCard
-  ///    sur les cards de résultats, souvent une List<String>.
-  String? _labelForEntry(Map<String, dynamic> result, Map? selectedVersion) {
-    final releaseLabels = releaseDetail?['labels'] as List?;
-
-    if (releaseLabels != null && releaseLabels.isNotEmpty) {
-      final name = releaseLabels.first['name'] as String?;
-      if (name != null && name.isNotEmpty) return name;
-    }
-
-    final searchLabel = result['label'];
-    if (searchLabel is List && searchLabel.isNotEmpty) {
-      return searchLabel.cast<String>().join(' • ');
-    }
-    if (searchLabel is String && searchLabel.isNotEmpty) return searchLabel;
-
-    return null;
-  }
-
-  /// Toujours privilégier la plus haute résolution disponible pour l'image
-  /// enregistrée en local : l'image du release précis (si édition
-  /// sélectionnée et son detail chargé), sinon celle du master, sinon le
-  /// cover_image du résultat de recherche. Ne JAMAIS utiliser
-  /// `selectedVersion['thumb']` pour l'enregistrement — ce n'est qu'une
-  /// miniature basse résolution destinée à la liste des éditions dans la
-  /// modal, pas à un usage plein cadre dans la collection.
-  String? _coverUrlForEntry(Map<String, dynamic> result) {
-    final releaseImages = releaseDetail?['images'] as List?;
-    if (releaseImages != null && releaseImages.isNotEmpty) {
-      final uri = releaseImages[0]['uri'] as String?;
-      if (uri != null && uri.isNotEmpty) return uri;
-    }
-
-    final masterImages = masterDetail?['images'] as List?;
-    if (masterImages != null && masterImages.isNotEmpty) {
-      final uri = masterImages[0]['uri'] as String?;
-      if (uri != null && uri.isNotEmpty) return uri;
-    }
-
-    return result['cover_image'] as String?;
-  }
-
-  /// Construit un VinylEntry à partir d'un résultat de recherche/master +
-  /// une édition optionnellement sélectionnée dans la modal. Utilisé pour la
-  /// collection ET la wantlist, pour que les deux stockent exactement les
-  /// mêmes infos (format/label/genres/styles/tracklist/notes/édition) et que
-  /// cliquer sur une entrée affiche toujours tout, peu importe la liste.
-  VinylEntry _buildVinylEntry(
-    Map<String, dynamic> result,
-    Map? selectedVersion,
-  ) {
-    final title = result['title'] as String? ?? '';
-    final parts = title.split(' - ');
-    final artist = parts.isNotEmpty ? parts[0] : 'Inconnu';
-    final albumTitle = parts.length > 1 ? parts.sublist(1).join(' - ') : title;
-
-    final releaseId = selectedVersion != null
-        ? selectedVersion['id'] as int?
-        : null;
-    final releaseCountry = selectedVersion != null
-        ? selectedVersion['country'] as String?
-        : null;
-    final releaseDate = selectedVersion != null
-        ? selectedVersion['released'] as String?
-        : null;
-
-    final rawYear = releaseDate ?? result['year']?.toString();
-    final year = int.tryParse((rawYear ?? '').split('-').first);
-
-    final format = selectedVersion != null
-        ? selectedVersion['format'] as String?
-        : (result['format'] as List?)?.join(', ');
-
-    final label = _labelForEntry(result, selectedVersion);
-
-    return VinylEntry(
-      discogsId: result['id'] as int,
-      artist: artist,
-      title: albumTitle,
-      year: year,
-      format: format,
-      label: label,
-      releaseId: releaseId,
-      releaseCountry: releaseCountry,
-      releaseDate: releaseDate,
-      genres: (masterDetail?['genres'] as List?)?.cast<String>(),
-      styles: (masterDetail?['styles'] as List?)?.cast<String>(),
-      tracklist: _tracklistForEntry(selectedVersion),
-      notes: cleanDiscogsNotes(masterDetail?['notes'] as String?),
-    );
-  }
-
-  // --- Ajouts dans ExplorerProvider ---
-
-  bool isInCollection = false;
-  bool isInWantlist = false;
-
-  String? _statusCheckedForToken; // remplace int? _statusCheckedForId
-
-  Future<void> checkCollectionStatus(
-    int masterId, {
-    Map? selectedVersion,
-  }) async {
-    final releaseId = selectedVersion?['id'] as int?;
-    final token = '$masterId-${releaseId ?? 'generic'}';
-    _statusCheckedForToken = token;
-
-    final inCollection = await storage.vinylExistsByDiscogsId(
-      masterId,
-      releaseId: releaseId,
-    );
-    final inWantlist = await storage.wantlistExistsByDiscogsId(
-      masterId,
-      releaseId: releaseId,
-    );
-
-    // Si l'utilisateur a changé d'édition (ou fermé la modal) entre-temps,
-    // ce résultat est obsolète.
-    if (_statusCheckedForToken != token) return;
-
-    isInCollection = inCollection;
-    isInWantlist = inWantlist;
-    notifyListeners();
-  }
-
-  /// Ajoute ou retire de la wantlist le master actuellement affiché dans la
-  /// modal (toggle). Peut désormais porter sur une édition précise
-  /// (selectedVersion), exactement comme la collection - même mécanique,
-  /// mêmes champs stockés (label/genres/styles/releaseId/...), pour que
-  /// cliquer sur une entrée wantlist ou collection affiche toujours les
-  /// mêmes infos. Le dédoublonnage reste indexé par masterId (jamais par
-  /// releaseId) : un même album ne peut être qu'une seule fois dans la
-  /// wantlist, quelle que soit l'édition visée.
-  ///
-  /// IMPORTANT : `result['id']` doit déjà être l'id résolu
-  /// (effectiveMasterId) — c'est la responsabilité de l'appelant (la modal)
-  /// de le garantir, cette méthode ne re-résout rien elle-même.
-  Future<void> toggleWantlist(
-    Map<String, dynamic> result,
-    Map? selectedVersion,
-  ) async {
-    final discogsId = result['id'] as int;
-    final releaseId = selectedVersion?['id'] as int?;
-
-    if (isInWantlist) {
-      await storage.removeWantlistByDiscogsId(discogsId, releaseId: releaseId);
-      isInWantlist = false;
-      notifyListeners();
-      await collectionProvider.reload();
-      return;
-    }
-
-    final entry = _buildVinylEntry(result, selectedVersion);
-
-    final coverUrl = _coverUrlForEntry(result);
-
-    var coverBytes;
-    if (coverUrl != null && coverUrl.isNotEmpty) {
-      final resp = await http.get(Uri.parse(resolveCoverUrl(coverUrl)!));
-      if (resp.statusCode == 200) coverBytes = resp.bodyBytes;
-    }
-
-    await storage.insertWantlist(entry, coverImageBytes: coverBytes);
-
-    isInWantlist = true;
-    await collectionProvider.reload();
     notifyListeners();
   }
 
@@ -614,6 +381,133 @@ class ExplorerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // =====================================================================
+  // COLLECTION & WISHLIST
+  // =====================================================================
+
+  bool isInCollection = false;
+  bool isInWishlist = false;
+
+  String? _statusCheckedForToken; // remplace int? _statusCheckedForId
+
+  Future<void> checkCollectionStatus(
+    int masterId, {
+    Map? selectedVersion,
+  }) async {
+    final releaseId = selectedVersion?['id'] as int?;
+    final token = '$masterId-${releaseId ?? 'generic'}';
+    _statusCheckedForToken = token;
+
+    final inCollection = await storage.vinylExistsByDiscogsId(
+      masterId,
+      releaseId: releaseId,
+    );
+    final inWishlist = await storage.wishlistExistsByDiscogsId(
+      masterId,
+      releaseId: releaseId,
+    );
+
+    // Si l'utilisateur a changé d'édition (ou fermé la modal) entre-temps,
+    // ce résultat est obsolète.
+    if (_statusCheckedForToken != token) return;
+
+    isInCollection = inCollection;
+    isInWishlist = inWishlist;
+    notifyListeners();
+  }
+
+  /// Toggle collection : ajoute si absent, retire si déjà présent.
+  /// selectedVersion est passé séparément (plutôt que déjà fourré dans
+  /// `result['selected_version']`) pour que la modal n'ait qu'un seul
+  /// point d'appel, que l'utilisateur ait choisi une édition ou non.
+  ///
+  /// `discogsId` utilisé pour ajouter/retirer est toujours celui du MASTER
+  /// (result['id']), jamais celui de l'édition choisie : c'est la clé
+  /// stable qui répond à "cet album est-il déjà dans ma collection ?",
+  /// indépendamment du pressage. Le pressage lui-même est du métadata
+  /// (releaseId/releaseCountry/releaseDate sur le VinylEntry), pas la clé
+  /// de dédup — sinon rouvrir la modale après avoir ajouté une édition
+  /// précise affichait à nouveau "Add to Collection" au lieu de "In
+  /// Collection", puisque checkCollectionStatus vérifie par masterId.
+  ///
+  /// IMPORTANT : `result['id']` doit déjà être l'id résolu
+  /// (effectiveMasterId) — c'est la responsabilité de l'appelant (la modal)
+  /// de le garantir, cette méthode ne re-résout rien elle-même.
+  Future<void> toggleCollection(
+    Map<String, dynamic> result,
+    Map? selectedVersion,
+  ) async {
+    final masterId = result['id'] as int;
+    final releaseId = selectedVersion?['id'] as int?;
+
+    if (isInCollection) {
+      await storage.deleteVinylByDiscogsId(masterId, releaseId: releaseId);
+      isInCollection = false;
+      notifyListeners();
+      await collectionProvider.reload();
+      return;
+    }
+
+    final payload = <String, dynamic>{
+      ...result,
+      'selected_version': selectedVersion,
+    };
+    await addToCollection(payload);
+  }
+
+  /// Ajoute ou retire de la wishlist le master actuellement affiché dans la
+  /// modal (toggle). Peut désormais porter sur une édition précise
+  /// (selectedVersion), exactement comme la collection - même mécanique,
+  /// mêmes champs stockés (label/genres/styles/releaseId/...), pour que
+  /// cliquer sur une entrée wishlist ou collection affiche toujours les
+  /// mêmes infos. Le dédoublonnage reste indexé par masterId (jamais par
+  /// releaseId) : un même album ne peut être qu'une seule fois dans la
+  /// wishlist, quelle que soit l'édition visée.
+  ///
+  /// IMPORTANT : `result['id']` doit déjà être l'id résolu
+  /// (effectiveMasterId) — c'est la responsabilité de l'appelant (la modal)
+  /// de le garantir, cette méthode ne re-résout rien elle-même.
+  Future<void> toggleWishlist(
+    Map<String, dynamic> result,
+    Map? selectedVersion,
+  ) async {
+    final discogsId = result['id'] as int;
+    final releaseId = selectedVersion?['id'] as int?;
+
+    if (isInWishlist) {
+      await storage.removeWishlistByDiscogsId(discogsId, releaseId: releaseId);
+      isInWishlist = false;
+      notifyListeners();
+      await collectionProvider.reload();
+      return;
+    }
+
+    final entry = VinylEntryBuilder.build(
+      result: result,
+      selectedVersion: selectedVersion,
+      masterDetail: masterDetail,
+      releaseDetail: releaseDetail,
+    );
+
+    final coverUrl = VinylEntryBuilder.coverUrlFor(
+      result: result,
+      masterDetail: masterDetail,
+      releaseDetail: releaseDetail,
+    );
+
+    Uint8List? coverBytes;
+    if (coverUrl != null && coverUrl.isNotEmpty) {
+      final resp = await http.get(Uri.parse(resolveCoverUrl(coverUrl)!));
+      if (resp.statusCode == 200) coverBytes = resp.bodyBytes;
+    }
+
+    await storage.insertWishlist(entry, coverImageBytes: coverBytes);
+
+    isInWishlist = true;
+    await collectionProvider.reload();
+    notifyListeners();
+  }
+
   Future<void> addToCollection(Map<String, dynamic> result) async {
     final selectedVersion = result['selected_version'] as Map?;
     final masterId = result['id'] as int;
@@ -625,9 +519,18 @@ class ExplorerProvider extends ChangeNotifier {
       return;
     }
 
-    final entry = _buildVinylEntry(result, selectedVersion);
+    final entry = VinylEntryBuilder.build(
+      result: result,
+      selectedVersion: selectedVersion,
+      masterDetail: masterDetail,
+      releaseDetail: releaseDetail,
+    );
 
-    final coverUrl = _coverUrlForEntry(result);
+    final coverUrl = VinylEntryBuilder.coverUrlFor(
+      result: result,
+      masterDetail: masterDetail,
+      releaseDetail: releaseDetail,
+    );
 
     var coverBytes;
     if (coverUrl != null && coverUrl.isNotEmpty) {
@@ -637,9 +540,9 @@ class ExplorerProvider extends ChangeNotifier {
 
     await storage.insertVinyl(entry, coverImageBytes: coverBytes);
 
-    if (isInWantlist) {
-      await storage.removeWantlistByDiscogsId(masterId, releaseId: releaseId);
-      isInWantlist = false;
+    if (isInWishlist) {
+      await storage.removeWishlistByDiscogsId(masterId, releaseId: releaseId);
+      isInWishlist = false;
     }
 
     isInCollection = true;

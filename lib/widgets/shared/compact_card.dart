@@ -1,29 +1,24 @@
-// standard_card.dart
+// compact_card.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../explorer_results_grid.dart';
+import '../explorer/explorer_results_grid.dart';
 
-class StandardCard extends StatelessWidget {
+class CompactCard extends StatelessWidget {
   final Widget cover;
   final String artist;
   final String album;
-  final String? year;
-  final bool hasYear;
   final GridFormatStyle style;
 
-  const StandardCard({
+  const CompactCard({
     super.key,
     required this.cover,
     required this.artist,
     required this.album,
-    required this.year,
-    required this.hasYear,
     required this.style,
   });
 
-  static const double _radius = 10;
-  static const double _coverInset =
-      8; // ← écart entre le cadre et l'image carrée
+  static const double _radius = 12;
+  static const double _coverInset = 8;
 
   @override
   Widget build(BuildContext context) {
@@ -58,10 +53,7 @@ class StandardCard extends StatelessWidget {
                   _coverInset,
                   0,
                 ),
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: cover, // coins carrés, non clippés
-                ),
+                child: AspectRatio(aspectRatio: 1, child: cover),
               ),
               SizedBox(
                 height: style.textContainerHeight,
@@ -80,37 +72,20 @@ class StandardCard extends StatelessWidget {
                           fontSize: style.titleFontSize,
                           fontWeight: FontWeight.w600,
                           letterSpacing: .1,
-                          height: 1.2,
+                          height: 1.15,
                           color: Colors.white.withValues(alpha: .85),
                         ),
                       ),
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              album,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: style.subtitleFontSize,
-                                height: 1.2,
-                                color: Colors.white.withValues(alpha: .58),
-                              ),
-                            ),
-                          ),
-                          if (hasYear) ...[
-                            const SizedBox(width: 6),
-                            Text(
-                              year!,
-                              style: TextStyle(
-                                fontSize: style.yearFontSize,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white.withValues(alpha: .45),
-                              ),
-                            ),
-                          ],
-                        ],
+                      const SizedBox(height: 2),
+                      Text(
+                        album,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: style.subtitleFontSize,
+                          height: 1.15,
+                          color: Colors.white.withValues(alpha: .58),
+                        ),
                       ),
                     ],
                   ),

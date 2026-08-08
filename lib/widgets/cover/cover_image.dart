@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'cover_image_native.dart'
     if (dart.library.html) 'cover_image_web.dart'
     as impl;
-import '../utils/cover_url.dart';
+import '../../utils/cover_url.dart';
 
 class CoverImage extends StatelessWidget {
   final String? localPath;

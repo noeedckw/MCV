@@ -11,7 +11,7 @@ import 'cards/collection_result_card.dart';
 /// of Discogs search results.
 ///
 /// [collectionKey] identifies which list this grid belongs to (e.g.
-/// `'collection'` or `'wantlist'`) so each keeps its own persisted column
+/// `'collection'` or `'wishlist'`) so each keeps its own persisted column
 /// count, independent of the other, via [GridColumnsStore].
 ///
 /// Pure presentation: it just lays out [entries]. Deciding whether to show

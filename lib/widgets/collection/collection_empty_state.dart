@@ -2,9 +2,9 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-enum CollectionEmptyType { emptyCollection, emptyWantlist, noSearchResults }
+enum CollectionEmptyType { emptyCollection, emptyWishlist, noSearchResults }
 
-/// Shown when the current view (collection or wantlist) has no items yet,
+/// Shown when the current view (collection or wishlist) has no items yet,
 /// or when a search inside the current view returns nothing.
 class CollectionEmptyState extends StatefulWidget {
   const CollectionEmptyState({
@@ -46,7 +46,7 @@ class _CollectionEmptyStateState extends State<CollectionEmptyState> {
     // noSearchResults -> noSearchResults
     // => même image
     //
-    // noSearchResults -> emptyWantlist
+    // noSearchResults -> emptyWishlist
     // => nouvelle image
     if (widget.type != _lastType) {
       _updateImage(widget.type);
@@ -159,12 +159,12 @@ class _CollectionEmptyStateState extends State<CollectionEmptyState> {
           ],
         );
 
-      case CollectionEmptyType.emptyWantlist:
+      case CollectionEmptyType.emptyWishlist:
         return const _CollectionEmptyData(
-          title: "Your Wantlist Is Empty",
+          title: "Your Wishlist Is Empty",
           subtitle: "Save albums you'd like to own to see them here.",
           images: [
-            "assets/images/search/empty_wantlist_vinyl.png",
+            "assets/images/search/empty_wishlist_vinyl.png",
           ],
         );
 

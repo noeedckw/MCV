@@ -9,7 +9,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
   static const _store = 'vinyls';
   // v1/v2 devices have this store; it's only read once during migration,
   // never written to again.
-  static const _legacyWantlistStore = 'wantlist';
+  static const _legacyWishlistStore = 'wishlist';
 
   @override
   Future<void> init() async {
@@ -28,21 +28,21 @@ class LocalStorageServiceImpl implements LocalStorageService {
           db.createObjectStore(_store, autoIncrement: true, keyPath: 'id');
         }
 
-        if (db.objectStoreNames.contains(_legacyWantlistStore)) {
-          final legacyStore = txn.objectStore(_legacyWantlistStore);
+        if (db.objectStoreNames.contains(_legacyWishlistStore)) {
+          final legacyStore = txn.objectStore(_legacyWishlistStore);
           final unifiedStore = txn.objectStore(_store);
           await for (final cursor in legacyStore.openCursor(
             autoAdvance: true,
           )) {
             final value = Map<String, dynamic>.from(cursor.value as Map);
-            value['isWantlist'] = true;
+            value['isWishlist'] = true;
             value.putIfAbsent('condition', () => null);
             value.putIfAbsent('releaseId', () => null);
             value.putIfAbsent('releaseCountry', () => null);
             value.putIfAbsent('releaseDate', () => null);
             await unifiedStore.put(value);
           }
-          db.deleteObjectStore(_legacyWantlistStore);
+          db.deleteObjectStore(_legacyWishlistStore);
         }
       },
     );
@@ -66,7 +66,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
         ? base64Decode(value['coverBase64'] as String)
         : null,
     dateAdded: DateTime.parse(value['dateAdded'] as String),
-    isWantlist: value['isWantlist'] as bool? ?? false,
+    isWishlist: value['isWishlist'] as bool? ?? false,
     releaseId: value['releaseId'] as int?,
     releaseCountry: value['releaseCountry'] as String?,
     releaseDate: value['releaseDate'] as String?,
@@ -81,7 +81,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
 
   Future<void> _insert(
     VinylEntry vinyl,
-    bool isWantlist,
+    bool isWishlist,
     Uint8List? coverImageBytes,
   ) async {
     final txn = _db.transaction(_store, 'readwrite');
@@ -98,7 +98,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
           ? base64Encode(coverImageBytes)
           : null,
       'dateAdded': vinyl.dateAdded.toIso8601String(),
-      'isWantlist': isWantlist,
+      'isWishlist': isWishlist,
       'releaseId': vinyl.releaseId,
       'releaseCountry': vinyl.releaseCountry,
       'releaseDate': vinyl.releaseDate,
@@ -110,13 +110,13 @@ class LocalStorageServiceImpl implements LocalStorageService {
     });
   }
 
-  Future<List<VinylEntry>> _getAll({required bool isWantlist}) async {
+  Future<List<VinylEntry>> _getAll({required bool isWishlist}) async {
     final txn = _db.transaction(_store, 'readonly');
     final store = txn.objectStore(_store);
     final results = <VinylEntry>[];
     await for (final cursor in store.openCursor(autoAdvance: true)) {
       final value = cursor.value as Map;
-      if ((value['isWantlist'] as bool? ?? false) == isWantlist) {
+      if ((value['isWishlist'] as bool? ?? false) == isWishlist) {
         results.add(_fromMap(value));
       }
     }
@@ -124,14 +124,14 @@ class LocalStorageServiceImpl implements LocalStorageService {
   }
 
   @override
-  Future<List<VinylEntry>> getAllVinyls() => _getAll(isWantlist: false);
+  Future<List<VinylEntry>> getAllVinyls() => _getAll(isWishlist: false);
 
   @override
-  Future<List<VinylEntry>> getAllWantlist() => _getAll(isWantlist: true);
+  Future<List<VinylEntry>> getAllWishlist() => _getAll(isWishlist: true);
 
   @override
   Future<List<VinylEntry>> getAllFavorites() async {
-    final all = await _getAll(isWantlist: false);
+    final all = await _getAll(isWishlist: false);
     return all.where((v) => v.isFavorite).toList();
   }
 
@@ -140,7 +140,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
       _insert(vinyl, false, coverImageBytes);
 
   @override
-  Future<void> insertWantlist(VinylEntry vinyl, {Uint8List? coverImageBytes}) =>
+  Future<void> insertWishlist(VinylEntry vinyl, {Uint8List? coverImageBytes}) =>
       _insert(vinyl, true, coverImageBytes);
 
   @override
@@ -151,7 +151,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
 
   Future<void> _deleteByDiscogsId(
     int discogsId,
-    bool isWantlist, {
+    bool isWishlist, {
     int? releaseId,
   }) async {
     final txn = _db.transaction(_store, 'readwrite');
@@ -160,7 +160,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
       final value = cursor.value as Map;
       if (value['discogsId'] == discogsId &&
           value['releaseId'] == releaseId &&
-          (value['isWantlist'] as bool? ?? false) == isWantlist) {
+          (value['isWishlist'] as bool? ?? false) == isWishlist) {
         await cursor.delete();
         break;
       }
@@ -173,15 +173,15 @@ class LocalStorageServiceImpl implements LocalStorageService {
       _deleteByDiscogsId(discogsId, false, releaseId: releaseId);
 
   @override
-  Future<void> removeWantlistByDiscogsId(int discogsId, {int? releaseId}) =>
+  Future<void> removeWishlistByDiscogsId(int discogsId, {int? releaseId}) =>
       _deleteByDiscogsId(discogsId, true, releaseId: releaseId);
 
   Future<bool> _existsByDiscogsId(
     int discogsId,
-    bool isWantlist, {
+    bool isWishlist, {
     int? releaseId,
   }) async {
-    final all = await _getAll(isWantlist: isWantlist);
+    final all = await _getAll(isWishlist: isWishlist);
     return all.any((v) => v.discogsId == discogsId && v.releaseId == releaseId);
   }
 
@@ -190,12 +190,12 @@ class LocalStorageServiceImpl implements LocalStorageService {
       _existsByDiscogsId(discogsId, false, releaseId: releaseId);
 
   @override
-  Future<bool> wantlistExistsByDiscogsId(int discogsId, {int? releaseId}) =>
+  Future<bool> wishlistExistsByDiscogsId(int discogsId, {int? releaseId}) =>
       _existsByDiscogsId(discogsId, true, releaseId: releaseId);
 
-  Future<void> _setWantlist(
+  Future<void> _setWishlist(
     int discogsId,
-    bool isWantlist, {
+    bool isWishlist, {
     int? releaseId,
   }) async {
     final txn = _db.transaction(_store, 'readwrite');
@@ -204,8 +204,8 @@ class LocalStorageServiceImpl implements LocalStorageService {
       final value = Map<String, dynamic>.from(cursor.value as Map);
       if (value['discogsId'] == discogsId &&
           value['releaseId'] == releaseId &&
-          (value['isWantlist'] as bool? ?? false) == !isWantlist) {
-        value['isWantlist'] = isWantlist;
+          (value['isWishlist'] as bool? ?? false) == !isWishlist) {
+        value['isWishlist'] = isWishlist;
         await cursor.update(value);
         break;
       }
@@ -215,11 +215,11 @@ class LocalStorageServiceImpl implements LocalStorageService {
 
   @override
   Future<void> moveToCollection(int discogsId, {int? releaseId}) =>
-      _setWantlist(discogsId, false, releaseId: releaseId);
+      _setWishlist(discogsId, false, releaseId: releaseId);
 
   @override
-  Future<void> moveToWantlist(int discogsId, {int? releaseId}) =>
-      _setWantlist(discogsId, true, releaseId: releaseId);
+  Future<void> moveToWishlist(int discogsId, {int? releaseId}) =>
+      _setWishlist(discogsId, true, releaseId: releaseId);
 
   @override
   Future<void> setFavorite(int id, bool isFavorite) async {

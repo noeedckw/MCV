@@ -10,8 +10,8 @@ import 'dart:convert';
 
 part 'local_storage_native.g.dart';
 
-// Single table for both the owned collection and the wantlist now.
-// `isWantlist` is the discriminator: moving an item between the two lists
+// Single table for both the owned collection and the wishlist now.
+// `isWishlist` is the discriminator: moving an item between the two lists
 // is a column update instead of a delete-in-one-table / insert-in-another,
 // which previously made "move without duplicating" (and preserving
 // releaseId/condition/original dateAdded) awkward with two tables.
@@ -28,7 +28,7 @@ class VinylsTable extends Table {
   DateTimeColumn get dateAdded =>
       dateTime().clientDefault(() => DateTime.now())();
 
-  BoolColumn get isWantlist => boolean().withDefault(const Constant(false))();
+  BoolColumn get isWishlist => boolean().withDefault(const Constant(false))();
   IntColumn get releaseId => integer().nullable()();
   TextColumn get releaseCountry => text().nullable()();
   TextColumn get releaseDate => text().nullable()();
@@ -50,33 +50,33 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
       if (from < 3) {
-        await m.addColumn(vinylsTable, vinylsTable.isWantlist);
+        await m.addColumn(vinylsTable, vinylsTable.isWishlist);
         await m.addColumn(vinylsTable, vinylsTable.releaseId);
         await m.addColumn(vinylsTable, vinylsTable.releaseCountry);
         await m.addColumn(vinylsTable, vinylsTable.releaseDate);
 
-        final hasLegacyWantlistTable = await m.database
+        final hasLegacyWishlistTable = await m.database
             .customSelect(
-              "SELECT name FROM sqlite_master WHERE type='table' AND name='wantlist_table'",
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='wishlist_table'",
             )
             .getSingleOrNull();
 
-        if (hasLegacyWantlistTable != null) {
+        if (hasLegacyWishlistTable != null) {
           await m.database.customStatement('''
                 INSERT INTO vinyls_table
-                  (discogs_id, artist, title, year, label, format, local_cover_path, date_added, is_wantlist)
+                  (discogs_id, artist, title, year, label, format, local_cover_path, date_added, is_wishlist)
                 SELECT
                   discogs_id, artist, title, year, label, format, local_cover_path, date_added, 1
-                FROM wantlist_table
+                FROM wishlist_table
               ''');
-          await m.database.customStatement('DROP TABLE wantlist_table');
+          await m.database.customStatement('DROP TABLE wishlist_table');
         }
       }
       if (from < 4) {
@@ -89,6 +89,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 6) {
         await m.addColumn(vinylsTable, vinylsTable.isFavorite);
+      }
+      if (from < 7) {
+        await m.addColumn(vinylsTable, vinylsTable.isWishlist);
       }
     },
   );
@@ -121,7 +124,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
     condition: r.condition,
     localCoverPath: r.localCoverPath,
     dateAdded: r.dateAdded,
-    isWantlist: r.isWantlist,
+    isWishlist: r.isWishlist,
     releaseId: r.releaseId,
     releaseCountry: r.releaseCountry,
     releaseDate: r.releaseDate,
@@ -146,22 +149,22 @@ class LocalStorageServiceImpl implements LocalStorageService {
   Future<List<VinylEntry>> getAllVinyls() async {
     final rows = await (_db.select(
       _db.vinylsTable,
-    )..where((t) => t.isWantlist.equals(false))).get();
+    )..where((t) => t.isWishlist.equals(false))).get();
     return rows.map(_toEntry).toList();
   }
 
   @override
-  Future<List<VinylEntry>> getAllWantlist() async {
+  Future<List<VinylEntry>> getAllWishlist() async {
     final rows = await (_db.select(
       _db.vinylsTable,
-    )..where((t) => t.isWantlist.equals(true))).get();
+    )..where((t) => t.isWishlist.equals(true))).get();
     return rows.map(_toEntry).toList();
   }
 
   @override
   Future<List<VinylEntry>> getAllFavorites() async {
     final rows = await (_db.select(_db.vinylsTable)..where(
-          (t) => t.isWantlist.equals(false) & t.isFavorite.equals(true),
+          (t) => t.isWishlist.equals(false) & t.isFavorite.equals(true),
         ))
         .get();
     return rows.map(_toEntry).toList();
@@ -169,11 +172,11 @@ class LocalStorageServiceImpl implements LocalStorageService {
 
   Future<void> _insert(
     VinylEntry vinyl,
-    bool isWantlist,
+    bool isWishlist,
     Uint8List? coverImageBytes,
   ) async {
     final coverPath = await _writeCoverIfNeeded(
-      isWantlist ? 'wantlist' : 'vinyl',
+      isWishlist ? 'wishlist' : 'vinyl',
       vinyl.discogsId,
       coverImageBytes,
     );
@@ -190,7 +193,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
             format: Value(vinyl.format),
             condition: Value(vinyl.condition),
             localCoverPath: Value(coverPath),
-            isWantlist: Value(isWantlist),
+            isWishlist: Value(isWishlist),
             releaseId: Value(vinyl.releaseId),
             releaseCountry: Value(vinyl.releaseCountry),
             releaseDate: Value(vinyl.releaseDate),
@@ -216,7 +219,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
       _insert(vinyl, false, coverImageBytes);
 
   @override
-  Future<void> insertWantlist(VinylEntry vinyl, {Uint8List? coverImageBytes}) =>
+  Future<void> insertWishlist(VinylEntry vinyl, {Uint8List? coverImageBytes}) =>
       _insert(vinyl, true, coverImageBytes);
 
   @override
@@ -229,7 +232,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
     await (_db.delete(_db.vinylsTable)..where(
           (t) =>
               t.discogsId.equals(discogsId) &
-              t.isWantlist.equals(false) &
+              t.isWishlist.equals(false) &
               (releaseId == null
                   ? t.releaseId.isNull()
                   : t.releaseId.equals(releaseId)),
@@ -238,14 +241,14 @@ class LocalStorageServiceImpl implements LocalStorageService {
   }
 
   @override
-  Future<void> removeWantlistByDiscogsId(
+  Future<void> removeWishlistByDiscogsId(
     int discogsId, {
     int? releaseId,
   }) async {
     await (_db.delete(_db.vinylsTable)..where(
           (t) =>
               t.discogsId.equals(discogsId) &
-              t.isWantlist.equals(true) &
+              t.isWishlist.equals(true) &
               (releaseId == null
                   ? t.releaseId.isNull()
                   : t.releaseId.equals(releaseId)),
@@ -259,7 +262,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
         await (_db.select(_db.vinylsTable)..where(
               (t) =>
                   t.discogsId.equals(discogsId) &
-                  t.isWantlist.equals(false) &
+                  t.isWishlist.equals(false) &
                   (releaseId == null
                       ? t.releaseId.isNull()
                       : t.releaseId.equals(releaseId)),
@@ -269,7 +272,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
   }
 
   @override
-  Future<bool> wantlistExistsByDiscogsId(
+  Future<bool> wishlistExistsByDiscogsId(
     int discogsId, {
     int? releaseId,
   }) async {
@@ -277,7 +280,7 @@ class LocalStorageServiceImpl implements LocalStorageService {
         await (_db.select(_db.vinylsTable)..where(
               (t) =>
                   t.discogsId.equals(discogsId) &
-                  t.isWantlist.equals(true) &
+                  t.isWishlist.equals(true) &
                   (releaseId == null
                       ? t.releaseId.isNull()
                       : t.releaseId.equals(releaseId)),
@@ -291,25 +294,25 @@ class LocalStorageServiceImpl implements LocalStorageService {
     await (_db.update(_db.vinylsTable)..where(
           (t) =>
               t.discogsId.equals(discogsId) &
-              t.isWantlist.equals(true) &
+              t.isWishlist.equals(true) &
               (releaseId == null
                   ? t.releaseId.isNull()
                   : t.releaseId.equals(releaseId)),
         ))
-        .write(const VinylsTableCompanion(isWantlist: Value(false)));
+        .write(const VinylsTableCompanion(isWishlist: Value(false)));
   }
 
   @override
-  Future<void> moveToWantlist(int discogsId, {int? releaseId}) async {
+  Future<void> moveToWishlist(int discogsId, {int? releaseId}) async {
     await (_db.update(_db.vinylsTable)..where(
           (t) =>
               t.discogsId.equals(discogsId) &
-              t.isWantlist.equals(false) &
+              t.isWishlist.equals(false) &
               (releaseId == null
                   ? t.releaseId.isNull()
                   : t.releaseId.equals(releaseId)),
         ))
-        .write(const VinylsTableCompanion(isWantlist: Value(true)));
+        .write(const VinylsTableCompanion(isWishlist: Value(true)));
   }
 
   @override
