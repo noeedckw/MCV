@@ -52,7 +52,7 @@ jobs:
           mkdir -p build/web/downloads
           cp build/app/outputs/flutter-apk/app-release.apk build/web/downloads/mcv.apk
           mkdir -p build/web/landing
-          cp -r landing/. build/web/landing/
+          cp -r mcv_landing_page/. build/web/landing/
 
       - uses: actions/upload-pages-artifact@v3
         with:
